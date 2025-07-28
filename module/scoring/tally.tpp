@@ -1,5 +1,8 @@
 #pragma once
 
+#include "device/memory.hpp"
+#include "tally_struct.h"
+
 
 namespace tally {
 
