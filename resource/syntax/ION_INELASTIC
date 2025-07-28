@@ -1,0 +1,38 @@
+  activate          [bool] : Not used (dummy).
+  library           [str]  : Not used (dummy).
+  transport_cutoff  [float]: Not used (dummy).
+  production_cutoff [float]: Not used (dummy).
+  mode_high         [str]  : Ion-nuclear reaction model for the high 
+                             energy ion (> 70 MeV/u). Possible options 
+                             are followed as below;
+                             
+    1) off          -> Turn off the ion-nuclear reaction. If this option is
+                       chosen, low energy ion-nuclear reaction model is in-
+                       activated also.
+    2) abrasion     -> Wilson abrasion model.
+    3) qmd          -> Relativistic Jaeri quantum molecular dynamics.
+                               
+  mode_low          [str]  : Ion-nuclear reaction model for the high 
+                             energy ion (< 70 MeV/u). Possible options 
+                             are followed as below;
+                             
+    1) bme          -> Boltzmann master equation.
+    2) incl         -> Compound nucleus formation model of 
+                       Liege intranuclear cascade.
+                                                 
+  evap_cutoff       [float]: Evaporation time cutoff. If the lifetime of 
+                             projectile ion is shorter than this parameter
+                             and the excitation energy is zero, unstable-
+                             breakup model is applied. Otherwise, projectile
+                             ion is considered as stable nuclei. Note that 
+                             the in-flight de-excitation is not supported.
+  activate_fission  [bool] : Activate competitive fission evaporation branch.
+  abrasion_ce       [bool] : If true, n-body energy conservation algorithm 
+                             is applied to abrasion model. Otherwise, n-body
+                             momentum conservation algorithm is applied.
+                             Note that this option valid only in abrasion 
+                             mode.
+  abrasion_nn       [bool] : If this parameter is activated, nucleon-nucleon 
+                             scattering algorithm is applied. Note that this 
+                             option valid only in abrasion mode.
+  use_exact_level   [bool] : Not supported now.

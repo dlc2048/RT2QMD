@@ -1,0 +1,18 @@
+  use_real_mass     [bool] : If true, real proton/neutron mass is used to 
+                             calculate NN cross-section and distance.
+                             Otherwise, INCL hadron mass is used.
+  ignore_coulomb    [bool] : If true, Coulomb deviation is ignored.
+  rp_correlation_p  [float]: Position and momentum correlation of proton.
+  rp_correlation_n  [float]: Position and momentum correlation of neutron.
+  fermi_momentum    [str]  : Fermi momentum calculation algorithm. Possible 
+                             options are followed as below;
+                             
+    1) constant       -> Fermi momentum is constant to all nucleus.
+    2) constant_light -> Heavy nucleus (A > 12) have constant fermi momentum.
+                         Pre-defined momentum is used to light nucleus.         
+    3) mass_dependent -> Using equation to calculate fermi momentum.
+                                                  
+  incl_dump_action  [bool] : If this parameter is activated, INCL model dump
+                             is printed.
+  incl_dump_size    [bool] : The snapshot size of INCL dump.
+  
