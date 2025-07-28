@@ -33,9 +33,6 @@ cmake_minimum_required(VERSION 3.7 FATAL_ERROR)
 # adding backwards compatibility one feature at a time.  We will just specify
 # that all policies will use version 2.8.12 semantics.
 cmake_policy(VERSION 2.8.12)
-cmake_policy(SET CMP0102 NEW)
-cmake_policy(SET CMP0126 NEW)
-cmake_policy(SET CMP0077 NEW)
 
 if( POLICY CMP0072 )
   # FindOpenGL prefers GLVND by default when available
@@ -45,6 +42,18 @@ endif()
 if( POLICY CMP0074 )
   # find_package uses <PackageName>_ROOT variables.
   cmake_policy(SET CMP0074 NEW)
+endif()
+
+if( POLICY CMP0077 )
+  cmake_policy(SET CMP0077 NEW)
+endif()
+
+if( POLICY CMP0102 )
+  cmake_policy(SET CMP0102 NEW)
+endif()
+
+if( POLICY CMP0126 )
+  cmake_policy(SET CMP0126 NEW)
 endif()
 
 project(RT2QMD C CXX)
