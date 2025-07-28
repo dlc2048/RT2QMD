@@ -33,6 +33,9 @@ cmake_minimum_required(VERSION 3.7 FATAL_ERROR)
 # adding backwards compatibility one feature at a time.  We will just specify
 # that all policies will use version 2.8.12 semantics.
 cmake_policy(VERSION 2.8.12)
+cmake_policy(SET CMP0102 NEW)
+cmake_policy(SET CMP0126 NEW)
+cmake_policy(SET CMP0077 NEW)
 
 if( POLICY CMP0072 )
   # FindOpenGL prefers GLVND by default when available
