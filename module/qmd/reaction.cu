@@ -171,9 +171,8 @@ namespace RT2QMD {
     }
 
 
-    __host__ cudaError_t __host__fieldDispatcher(int block, int thread, int field_target) {
+    __host__ void __host__fieldDispatcher(int block, int thread, int field_target) {
         __kernel__fieldDispatcher <<< block, thread, mcutil::SIZE_SHARED_MEMORY_QMD >>> (field_target);
-        return cudaDeviceSynchronize();
     }
 
 
@@ -196,9 +195,8 @@ namespace RT2QMD {
     }
 
 
-    __host__ cudaError_t __host__pullEligibleField(int block, int thread) {
+    __host__ void __host__pullEligibleField(int block, int thread) {
         __kernel__pullEligibleField <<< block, thread, mcutil::SIZE_SHARED_MEMORY_QMD >>> ();
-        return cudaDeviceSynchronize();
     }
 
 
@@ -522,9 +520,8 @@ namespace RT2QMD {
     }
     
 
-    __host__ cudaError_t __host__prepareModel(int block, int thread, int field_target) {
+    __host__ void __host__prepareModel(int block, int thread, int field_target) {
         __kernel__prepareModel <<< block, thread, mcutil::SIZE_SHARED_MEMORY_QMD >>> (field_target);
-        return cudaDeviceSynchronize();
     }
 
 
@@ -560,9 +557,8 @@ namespace RT2QMD {
     }
 
 
-    __host__ cudaError_t __host__prepareProjectile(int block, int thread) {
+    __host__ void __host__prepareProjectile(int block, int thread) {
         __kernel__prepareProjectile <<< block, thread, mcutil::SIZE_SHARED_MEMORY_QMD >>> ();
-        return cudaDeviceSynchronize();
     }
 
 
@@ -598,9 +594,8 @@ namespace RT2QMD {
     }
 
 
-    __host__ cudaError_t __host__prepareTarget(int block, int thread) {
+    __host__ void __host__prepareTarget(int block, int thread) {
         __kernel__prepareTarget <<< block, thread, mcutil::SIZE_SHARED_MEMORY_QMD >>> ();
-        return cudaDeviceSynchronize();
     }
 
 
@@ -673,9 +668,8 @@ namespace RT2QMD {
     }
 
 
-    __host__ cudaError_t __host__propagate(int block, int thread) {
+    __host__ void __host__propagate(int block, int thread) {
         __kernel__propagate <<< block, thread, mcutil::SIZE_SHARED_MEMORY_QMD >>> ();
-        return cudaDeviceSynchronize();
     }
 
 
@@ -725,9 +719,8 @@ namespace RT2QMD {
     }
 
 
-    __host__ cudaError_t __host__finalize(int block, int thread, int field_target) {
+    __host__ void __host__finalize(int block, int thread, int field_target) {
         __kernel__finalize <<< block, thread, mcutil::SIZE_SHARED_MEMORY_QMD >>> (field_target);
-        return cudaDeviceSynchronize();
     }
 
 

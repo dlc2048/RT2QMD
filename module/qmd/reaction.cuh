@@ -47,13 +47,13 @@ namespace RT2QMD {
     __global__ void __kernel__fieldDispatcher(int field_target);
 
 
-    __host__ cudaError_t __host__fieldDispatcher(int block, int thread, int field_target);
+    __host__ void __host__fieldDispatcher(int block, int thread, int field_target);
 
 
     __global__ void __kernel__pullEligibleField();
 
 
-    __host__ cudaError_t __host__pullEligibleField(int block, int thread);
+    __host__ void __host__pullEligibleField(int block, int thread);
 
 
     __device__ void prepareModel(int field_target);
@@ -68,31 +68,31 @@ namespace RT2QMD {
     __global__ void __kernel__prepareModel(int field_target);
 
 
-    __host__ cudaError_t __host__prepareModel(int block, int thread, int field_target);
+    __host__ void __host__prepareModel(int block, int thread, int field_target);
 
 
     __global__ void __kernel__prepareProjectile();
 
 
-    __host__ cudaError_t __host__prepareProjectile(int block, int thread);
+    __host__ void __host__prepareProjectile(int block, int thread);
 
 
     __global__ void __kernel__prepareTarget();
 
 
-    __host__ cudaError_t __host__prepareTarget(int block, int thread);
+    __host__ void __host__prepareTarget(int block, int thread);
 
 
     __global__ void __kernel__propagate();
 
 
-    __host__ cudaError_t __host__propagate(int block, int thread);
+    __host__ void __host__propagate(int block, int thread);
 
 
     __global__ void __kernel__finalize(int field_target);
 
 
-    __host__ cudaError_t __host__finalize(int block, int thread, int field_target);
+    __host__ void __host__finalize(int block, int thread, int field_target);
 
 
     __host__ void __host__deviceResetModelBuffer(int block, int thread, bool return_data);

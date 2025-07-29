@@ -285,6 +285,7 @@ namespace RT2QMD {
                 }
 
                 this->_timer_counter++;
+                cudaDeviceSynchronize();
             }
         }
         return;
@@ -470,20 +471,20 @@ namespace RT2QMD {
         while (true) {
 
 #ifdef RT2QMD_PERSISTENT_DISPATCHER
-            CUDA_CHECK(__host__fieldDispatcher(this->_block, this->_thread, buffer_idx));  // initialize QMD field
+            __host__fieldDispatcher(this->_block, this->_thread, buffer_idx);  // initialize QMD field
             this->_measureTime("__host__fieldDispatcher", this->_block, this->_thread);
-            CUDA_CHECK(__host__pullEligibleField(this->_block, this->_thread));            // pull eligible field from idx queue
+            __host__pullEligibleField(this->_block, this->_thread);            // pull eligible field from idx queue
             this->_measureTime("__host__pullEligibleField", this->_block, this->_thread);
 #else
-            CUDA_CHECK(__host__prepareModel(this->_block, this->_thread, buffer_idx));
+            __host__prepareModel(this->_block, this->_thread, buffer_idx);
             this->_measureTime("__host__prepareModel", this->_block, this->_thread);
-            CUDA_CHECK(__host__prepareProjectile(this->_block, this->_thread));
+            __host__prepareProjectile(this->_block, this->_thread);
             this->_measureTime("__host__prepareProjectile", this->_block, this->_thread);
-            CUDA_CHECK(__host__prepareTarget(this->_block, this->_thread));
+            __host__prepareTarget(this->_block, this->_thread);
             this->_measureTime("__host__prepareTarget", this->_block, this->_thread);
 #endif
-            CUDA_CHECK(__host__propagate(this->_block, this->_thread));                    // do propagate
-            CUDA_CHECK(__host__finalize(this->_block, this->_thread, buffer_idx));         // finalize
+            __host__propagate(this->_block, this->_thread);                    // do propagate
+            __host__finalize(this->_block, this->_thread, buffer_idx);         // finalize
 
             // __host__deviceResetModelBuffer(this->_block, this->_thread, false);
 
