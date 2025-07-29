@@ -362,6 +362,8 @@ int main(int argc, char* argv[]) {
 
 			}
 
+			// CUDA_CHECK(cudaDeviceSynchronize());
+
 			tally_handler.appendYield(buffer_handler.deviceptr());
 
 			if (!event_generator.settings().fullMode() && (btype != mcutil::BUFFER_TYPE::SOURCE || qmd_applied))
@@ -371,6 +373,8 @@ int main(int argc, char* argv[]) {
 				std::vector<geo::PhaseSpace> ps_seg = buffer_handler.getTransportPhaseSpace(btype_target, buffer_handler.hasHid());
 				ps_transport.insert(ps_transport.begin(), ps_seg.begin(), ps_seg.end());
 			}
+
+			// CUDA_CHECK(cudaDeviceSynchronize());
 			
 			buffer_handler.clearTransportBuffer(btype_target);
 		}
