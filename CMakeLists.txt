@@ -175,6 +175,19 @@ mark_as_advanced(CLEAR CUDA_64_BIT_DEVICE_CODE)
 
 set(CUDA_MIN_SM_TARGET sm_61 CACHE STRING "Minimum CUDA SM architecture to use for compilation.")
 
+function(rt2_add_cuda_flag_config config flag)
+  string(TOUPPER "${config}" config)
+  list(FIND CUDA_NVCC_FLAGS${config} ${flag} index)
+  if(index EQUAL -1)
+    list(APPEND CUDA_NVCC_FLAGS${config} ${flag})
+    set(CUDA_NVCC_FLAGS${config} ${CUDA_NVCC_FLAGS${config}} CACHE STRING ${CUDA_NVCC_FLAGS_DESCRIPTION} FORCE)
+  endif()
+endfunction()
+
+function(rt2_add_cuda_flag flag)
+  rt2_add_cuda_flag_config( "" ${flag} )
+endfunction()
+
 # Add some useful default arguments to the NVCC and NVRTC flags.  This is an example of
 # how we use PASSED_FIRST_CONFIGURE.  Once you have configured, this variable is TRUE
 # and following block of code will not be executed leaving you free to edit the values
@@ -188,7 +201,34 @@ if( NOT PASSED_FIRST_CONFIGURE )
     list(APPEND CUDA_NVCC_FLAGS -arch ${CUDA_MIN_SM_TARGET})
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} CACHE STRING "Semi-colon delimit multiple arguments." FORCE)
   endif()
+
+  rt2_add_cuda_flag("--use_fast_math")
+  rt2_add_cuda_flag("-lineinfo")
+  if( DEFINED CMAKE_CONFIGURATION_TYPES )
+    foreach( config ${CMAKE_CONFIGURATION_TYPES} )
+      if( ${config} STREQUAL "Debug" )
+        rt2_add_cuda_flag_config( _${config} "-G" )
+        rt2_add_cuda_flag_config( _${config} "-O0" )
+      endif()
+    endforeach()
+  else()
+    if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
+      rt2_add_cuda_flag( "-G" )
+      rt2_add_cuda_flag( "-O0" )
+    endif()
+  endif()
   
+
+
+  if( CUDA_VERSION VERSION_LESS "3.0" )
+    rt2_add_cuda_flag("--keep")
+  endif()
+
+  # Some CUDA 11.x toolkits erroneously complain about sm_50 being deprecated
+  if(CUDA_VERSION VERSION_GREATER "11.0")
+    rt2_add_cuda_flag("-Wno-deprecated-gpu-targets")
+  endif()
+
   if(CMAKE_CXX_STANDARD EQUAL 17)
     set(SAMPLES_NVRTC_CXX "-std=c++17")
   else()
@@ -199,7 +239,7 @@ endif()
 
 mark_as_advanced(CUDA_NVRTC_FLAGS)
 
-set(RT2QMD_SOURCE_OPTIONS "-rdc=true" "-Xptxas" "-O3" "--use_fast_math")
+set(RT2QMD_SOURCE_OPTIONS "-rdc=true")
  
 # This passes a preprocessor definition to cl.exe when processing CUDA code.
 if(USING_WINDOWS_CL)
@@ -221,11 +261,6 @@ endif()
 
 # Select whether to use NVRTC or NVCC to generate PTX
 set(CUDA_NVRTC_ENABLED OFF CACHE BOOL "Use NVRTC to compile PTX at run-time instead of NVCC at build-time")
-if( CUDA_NVRTC_ENABLED AND SAMPLES_INPUT_GENERATE_OPTIXIR )
-  if( NOT SAMPLES_INPUT_GENERATE_PTX )
-    message( SEND_ERROR "CUDA_NVRTC_ENABLED is only compatible with SAMPLES_INPUT_GENERATE_PTX. Please disable CUDA_NVRTC_ENABLED unless enabling SAMPLES_INPUT_GENERATE_PTX." )
-  endif()
-endif()
 
 #########################################################
 
