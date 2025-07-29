@@ -316,7 +316,13 @@ int main(int argc, char* argv[]) {
 				case mcutil::BUFFER_TYPE::GNEUTRON:
 				case mcutil::BUFFER_TYPE::GENION:
 				case mcutil::BUFFER_TYPE::RELAXATION:
-					buffer_handler.pullVector(btype);  // not supported in RT2QMD standalone, just flush
+					tally_handler.appendYield(buffer_handler.deviceptr(), btype);
+					if (event_generator.settings().writePS()) {
+						std::vector<geo::PhaseSpace> ps_seg = buffer_handler.getPhaseSpace(btype, buffer_handler.hasHid());
+						ps_transport.insert(ps_transport.begin(), ps_seg.begin(), ps_seg.end());
+					}
+					buffer_handler.clearTarget(btype);  // not supported in RT2QMD standalone, just flush
+					// buffer_handler.pullVector(btype); 
 					break;
 				case mcutil::BUFFER_TYPE::RAYLEIGH:
 				case mcutil::BUFFER_TYPE::PHOTO:
@@ -364,19 +370,12 @@ int main(int argc, char* argv[]) {
 
 			// CUDA_CHECK(cudaDeviceSynchronize());
 
-			tally_handler.appendYield(buffer_handler.deviceptr());
-
 			if (!event_generator.settings().fullMode() && (btype != mcutil::BUFFER_TYPE::SOURCE || qmd_applied))
 				break;
 
-			if (event_generator.settings().writePS()) {
-				std::vector<geo::PhaseSpace> ps_seg = buffer_handler.getTransportPhaseSpace(btype_target, buffer_handler.hasHid());
-				ps_transport.insert(ps_transport.begin(), ps_seg.begin(), ps_seg.end());
-			}
-
 			// CUDA_CHECK(cudaDeviceSynchronize());
 			
-			buffer_handler.clearTransportBuffer(btype_target);
+			// buffer_handler.clearTransportBuffer(btype_target);
 		}
 
 		mclog::info("*** Launch History ***");

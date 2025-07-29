@@ -242,17 +242,15 @@ namespace tally {
     }
 
 
-    void DeviceMemoryHandlerMT::appendYield(mcutil::RingBuffer* buffer_ptr) {
-        for (size_t i = 0; i < mcutil::BUFFER_TYPE::RELAXATION; ++i) {
-            auto iter = this->_yield_handle.find(i);
-            if (iter != this->_yield_handle.end())
-                appendYieldFromBuffer(
-                    this->_block, this->_thread, 
-                    buffer_ptr,
-                    static_cast<mcutil::BUFFER_TYPE>(i), 
-                    &iter->second
-                );
-        }
+    void DeviceMemoryHandlerMT::appendYield(mcutil::RingBuffer* buffer_ptr, mcutil::BUFFER_TYPE bid) {
+        auto iter = this->_yield_handle.find(bid);
+        if (iter != this->_yield_handle.end())
+            appendYieldFromBuffer(
+                this->_block, this->_thread, 
+                buffer_ptr,
+                static_cast<mcutil::BUFFER_TYPE>(bid),
+                &iter->second
+            );
     }
 
 

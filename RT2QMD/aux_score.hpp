@@ -112,7 +112,7 @@ namespace tally {
         void summary() const;
 
 
-        void appendYield(mcutil::RingBuffer* buffer_ptr);
+        void appendYield(mcutil::RingBuffer* buffer_ptr, mcutil::BUFFER_TYPE bid);
 
 
         void prepareYieldHandle();
