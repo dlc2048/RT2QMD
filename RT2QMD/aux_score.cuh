@@ -87,8 +87,6 @@ namespace tally {
     __global__ void __kernel__appendYieldFromBuffer(
         mcutil::RingBuffer*    buffer,
         mcutil::BUFFER_TYPE    btype,
-        unsigned long long int from, 
-        unsigned long long int to, 
         DeviceSecYield**       yield_list,
         int                    n_yield
     );
