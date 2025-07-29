@@ -1,3 +1,30 @@
+//
+// Copyright (C) 2025 CM Lee, SJ Ye, Seoul Sational University
+//
+// Licensed to the Apache Software Foundation(ASF) under one
+// or more contributor license agreements.See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// 	"License"); you may not use this file except in compliance
+// 	with the License.You may obtain a copy of the License at
+// 
+// 	http ://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.See the License for the
+// specific language governing permissionsand limitations
+// under the License.
+
+/**
+ * @file    module/qmd/buffer.cu
+ * @brief   Device side internal queue for QMD
+ * @author  CM Lee
+ * @date    02/14/2024
+ */
+
 
 #include "buffer.cuh"
 #include "device/shuffle.cuh"
@@ -229,7 +256,7 @@ namespace RT2QMD {
         }
 
 
-        __device__ void tryDumpAction(int line, const char* func, const char* file) {
+        __device__ void tryDumpAction(int line, const char* func, const char* file, int func_len, int file_len) {
             if (CURRENT_DUMP_IDX >= GLOBAL_DUMP_BUFFER_SIZE) return;
             if (blockIdx.x) return;  // write only leading model
 
@@ -239,8 +266,10 @@ namespace RT2QMD {
             int idx;
             for (int i = 0; i <= blockDim.x / sizeof(float); ++i) {
                 idx = i * blockDim.x + threadIdx.x;
-                if (idx < 256) {
+                if (idx < file_len) {
                     dump.file[idx]     = file[idx];
+                }
+                if (idx < func_len) {
                     dump.function[idx] = func[idx];
                 }
                 __syncthreads();
@@ -264,12 +293,12 @@ namespace RT2QMD {
                 int ti;
                 if (mi < Buffer::model_cached->current_field_size_2) {
                     ti = mi + Buffer::model_cached->offset_2d;
-                    dump.mean_field.rr2[ti]  = Buffer::MeanField::rr2[mi];
-                    dump.mean_field.pp2[ti]  = Buffer::MeanField::pp2[mi];
-                    dump.mean_field.rbij[ti] = Buffer::MeanField::rbij[mi];
-                    dump.mean_field.rha[ti]  = Buffer::MeanField::rha[mi];
-                    dump.mean_field.rhe[ti]  = Buffer::MeanField::rhe[mi];
-                    dump.mean_field.rhc[ti]  = Buffer::MeanField::rhc[mi];
+                    dump.mean_field.rr2[mi]  = Buffer::MeanField::rr2[ti];
+                    dump.mean_field.pp2[mi]  = Buffer::MeanField::pp2[ti];
+                    dump.mean_field.rbij[mi] = Buffer::MeanField::rbij[ti];
+                    dump.mean_field.rha[mi]  = Buffer::MeanField::rha[ti];
+                    dump.mean_field.rhe[mi]  = Buffer::MeanField::rhe[ti];
+                    dump.mean_field.rhc[mi]  = Buffer::MeanField::rhc[ti];
                 }
                 __syncthreads();
             }
@@ -281,19 +310,19 @@ namespace RT2QMD {
                 int ti;
                 if (mi < Buffer::model_cached->current_field_size) {
                     ti = mi + Buffer::model_cached->offset_1d;
-                    dump.mean_field.ffrx[ti] = Buffer::MeanField::ffrx[mi];
-                    dump.mean_field.ffry[ti] = Buffer::MeanField::ffry[mi];
-                    dump.mean_field.ffrz[ti] = Buffer::MeanField::ffrz[mi];
-                    dump.mean_field.ffpx[ti] = Buffer::MeanField::ffpx[mi];
-                    dump.mean_field.ffpy[ti] = Buffer::MeanField::ffpy[mi];
-                    dump.mean_field.ffpz[ti] = Buffer::MeanField::ffpz[mi];
-                    dump.mean_field.f0rx[ti] = Buffer::MeanField::f0rx[mi];
-                    dump.mean_field.f0ry[ti] = Buffer::MeanField::f0ry[mi];
-                    dump.mean_field.f0rz[ti] = Buffer::MeanField::f0rz[mi];
-                    dump.mean_field.f0px[ti] = Buffer::MeanField::f0px[mi];
-                    dump.mean_field.f0py[ti] = Buffer::MeanField::f0py[mi];
-                    dump.mean_field.f0pz[ti] = Buffer::MeanField::f0pz[mi];
-                    dump.mean_field.rh3d[ti] = Buffer::MeanField::rh3d[mi];
+                    dump.mean_field.ffrx[mi] = Buffer::MeanField::ffrx[ti];
+                    dump.mean_field.ffry[mi] = Buffer::MeanField::ffry[ti];
+                    dump.mean_field.ffrz[mi] = Buffer::MeanField::ffrz[ti];
+                    dump.mean_field.ffpx[mi] = Buffer::MeanField::ffpx[ti];
+                    dump.mean_field.ffpy[mi] = Buffer::MeanField::ffpy[ti];
+                    dump.mean_field.ffpz[mi] = Buffer::MeanField::ffpz[ti];
+                    dump.mean_field.f0rx[mi] = Buffer::MeanField::f0rx[ti];
+                    dump.mean_field.f0ry[mi] = Buffer::MeanField::f0ry[ti];
+                    dump.mean_field.f0rz[mi] = Buffer::MeanField::f0rz[ti];
+                    dump.mean_field.f0px[mi] = Buffer::MeanField::f0px[ti];
+                    dump.mean_field.f0py[mi] = Buffer::MeanField::f0py[ti];
+                    dump.mean_field.f0pz[mi] = Buffer::MeanField::f0pz[ti];
+                    dump.mean_field.rh3d[mi] = Buffer::MeanField::rh3d[ti];
                 }
                 __syncthreads();
             }
