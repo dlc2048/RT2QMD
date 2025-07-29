@@ -93,17 +93,18 @@ namespace RT2QMD {
 
 
     void DeviceMemoryHandler::_initTimer() {
-        bool use_timer = Host::Config::getInstance().measureTime();
-        if (use_timer) {
+        this->_use_timer = Host::Config::getInstance().measureTime();
+        if (this->_use_timer) {
             this->_timer_counter = 0;
             this->_timer_out     = std::make_unique<std::ofstream>("exe_time.txt");
             this->_clock_host    = std::vector<long long int>(this->_block);
+            this->_timer_size    = Host::Config::getInstance().timerSize();
 
             mcutil::DeviceVectorHelper dev_vector(this->_clock_host);
             this->_memoryUsageAppend(dev_vector.memoryUsage());
             this->_clock_dev  = dev_vector.address();
         }
-        CUDA_CHECK(setPtrTimer(use_timer, this->_clock_dev));
+        CUDA_CHECK(setPtrTimer(this->_use_timer, this->_clock_dev));
     }
 
 
@@ -268,8 +269,8 @@ namespace RT2QMD {
 
 
     void DeviceMemoryHandler::_measureTime(const std::string& method_name, size_t block, size_t thread) {
-        if (Host::Config::getInstance().measureTime()) {
-            if (this->_timer_counter < Host::Config::getInstance().timerSize()) {
+        if (this->_use_timer) {
+            if (this->_timer_counter < this->_timer_size) {
                 CUDA_CHECK(cudaMemcpy(&this->_clock_host[0], this->_clock_dev,
                     sizeof(long long int) * this->_clock_host.size(), cudaMemcpyDeviceToHost));
                 *this->_timer_out << method_name << "<<<" << block << "," << thread << ">>>" << std::endl;

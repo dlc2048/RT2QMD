@@ -65,6 +65,9 @@ namespace RT2QMD {
         long long int* _clock_dev;
         std::vector<long long int> _clock_host;
 
+        bool _use_timer;
+        int  _timer_size;
+
         // global problem
         size_t _max_field_dimension;  // maximum field dimension (nxn)
         size_t _n_qmd_prob_group;     // number of QMD problem group (dimension32, 64 ...)
