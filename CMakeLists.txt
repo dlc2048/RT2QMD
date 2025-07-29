@@ -199,12 +199,7 @@ endif()
 
 mark_as_advanced(CUDA_NVRTC_FLAGS)
 
-set(RT2QMD_SOURCE_OPTIONS "-rdc=true")
-if ( CMAKE_BUILD_TYPE STREQUAL "Debug" )
-  list(APPEND RT2QMD_SOURCE_OPTIONS "-G" "-O0")
-elseif()
-  list(APPEND RT2QMD_SOURCE_OPTIONS "-Xptxas" "-O3" "--use_fast_math")
-endif()
+set(RT2QMD_SOURCE_OPTIONS "-rdc=true" "-Xptxas" "-O3" "--use_fast_math")
  
 # This passes a preprocessor definition to cl.exe when processing CUDA code.
 if(USING_WINDOWS_CL)

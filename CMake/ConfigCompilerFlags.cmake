@@ -134,7 +134,7 @@ SET(DEBUG_FLAGS "-O0 -g3")
 
 # We might consider adding -ffast-math.
 
-SET(RELEASE_FLAGS "-O3 -ffast-math")
+SET(RELEASE_FLAGS "-O3 -DNDEBUG -ffast-math -funroll-loops")
 IF   (USING_GNU_C OR USING_CLANG_C)
   APPEND_TO_STRING(C_FLAGS         ${C_WARNING_FLAGS})
   APPEND_TO_STRING(C_FLAGS_DEBUG   ${DEBUG_FLAGS})

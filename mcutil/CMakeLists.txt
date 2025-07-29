@@ -1,3 +1,13 @@
+#macro(set_mcutil_library library)
+#  file(GLOB sub_sources "${library}/*.hpp" "${library}/*.cpp" "${library}/*.tpp")
+#  add_library(
+#    ${library}
+#    STATIC
+#    ${sub_sources}
+#  )
+#  set_target_properties(${library} PROPERTIES FOLDER "mcutil") 
+#endmacro()
+
 
 function(add_mcutil_cuda_library target_name_base target_name_var)
 
@@ -34,10 +44,12 @@ function(add_mcutil_cpp_library target_name)
   set_target_properties(${target_name} PROPERTIES FOLDER "mcutil") 
 endfunction()
 
+include_directories( "${CMAKE_SOURCE_DIR}/mcutil" )
+
 object_add_source_groups()
 
 grab_sources(device device_sources)
-add_mcutil_cuda_library( device device_target ${device_sources} OPTIONS ${RT2QMD_SOURCE_OPTIONS} )
+add_mcutil_cuda_library( device device_target ${device_sources} OPTIONS ${RT2QMD_SOURCE_OPTIONS})
 
 add_mcutil_cpp_library( fortran   )
 add_mcutil_cpp_library( singleton )
@@ -50,9 +62,3 @@ target_link_libraries( fortran  mclog )
 target_link_libraries( prompt   mclog )
 target_link_libraries( parser   mclog prompt )
 target_link_libraries( device   parser GSL::gsl GSL::gslcblas )
-
-target_include_directories( mclog   PRIVATE "${CMAKE_SOURCE_DIR}/mcutil")
-target_include_directories( fortran PRIVATE "${CMAKE_SOURCE_DIR}/mcutil")
-target_include_directories( prompt  PRIVATE "${CMAKE_SOURCE_DIR}/mcutil")
-target_include_directories( parser  PRIVATE "${CMAKE_SOURCE_DIR}/mcutil")
-target_include_directories( device  PRIVATE "${CMAKE_SOURCE_DIR}/mcutil")

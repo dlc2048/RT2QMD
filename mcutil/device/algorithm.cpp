@@ -32,6 +32,9 @@
 #include <sutil/sutil.h>
 #endif
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 #include "algorithm.hpp"
 
 
