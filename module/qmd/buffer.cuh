@@ -1,9 +1,30 @@
+//
+// Copyright (C) 2025 CM Lee, SJ Ye, Seoul Sational University
+//
+// Licensed to the Apache Software Foundation(ASF) under one
+// or more contributor license agreements.See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// 	"License"); you may not use this file except in compliance
+// 	with the License.You may obtain a copy of the License at
+// 
+// 	http ://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.See the License for the
+// specific language governing permissionsand limitations
+// under the License.
+
 /**
  * @file    module/qmd/buffer.cuh
  * @brief   Device side internal queue for QMD
  * @author  CM Lee
  * @date    02/14/2024
  */
+
 
 #pragma once
 
@@ -18,7 +39,7 @@
 #ifdef NDEBUG
     #define QMD_DUMP_ACTION__
 #else
-    #define QMD_DUMP_ACTION__ RT2QMD::Buffer::tryDumpAction(__LINE__, __FUNCTION__, __FILE__)
+    #define QMD_DUMP_ACTION__(function, file, lfunction, lfile) RT2QMD::Buffer::tryDumpAction(__LINE__, function, file, lfunction, lfile)
 #endif
 
 
@@ -372,7 +393,7 @@ namespace RT2QMD {
         __device__ void writeModelToBuffer(int meta_idx = 0);
 
 
-        __device__ void tryDumpAction(int line, const char* func, const char* file);
+        __device__ void tryDumpAction(int line, const char* func, const char* file, int func_len, int file_len);
 
 
         __host__ void __host__deviceGetQMDPriority(size_t thread, mcutil::RingBuffer* buffer, int* target);

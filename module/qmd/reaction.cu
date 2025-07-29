@@ -1,3 +1,30 @@
+//
+// Copyright (C) 2025 CM Lee, SJ Ye, Seoul Sational University
+//
+// Licensed to the Apache Software Foundation(ASF) under one
+// or more contributor license agreements.See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// 	"License"); you may not use this file except in compliance
+// 	with the License.You may obtain a copy of the License at
+// 
+// 	http ://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.See the License for the
+// specific language governing permissionsand limitations
+// under the License.
+
+/**
+ * @file    module/qmd/reaction.cu
+ * @brief   QMD reaction
+ * @author  CM Lee
+ * @date    02/15/2024
+ */
+
 
 #include "reaction.cuh"
 #include "buffer.cuh"
@@ -12,6 +39,16 @@
 
 
 namespace RT2QMD {
+
+
+    namespace REACTION {
+        constexpr size_t const_strlen(const char* str) {
+            size_t len = 0;
+            while (str[len] != '\0') ++len;
+            return len;
+        }
+        constexpr size_t FILE_LEN     = const_strlen(__FILE__);
+    }
 
 
     // timer
@@ -605,7 +642,7 @@ namespace RT2QMD {
             MeanField::calTotalKineticEnergy();
             MeanField::calTotalPotentialEnergy();
             MeanField::doClusterJudgement();
-            QMD_DUMP_ACTION__;
+            QMD_DUMP_ACTION__(__FUNCTION__, __FILE__, 28, REACTION::FILE_LEN);
 #endif
         }
         {
