@@ -39,7 +39,7 @@
 namespace mcutil {
 
 
-	constexpr int BLOCK_DIM_QMD    = 128;
+	constexpr int BLOCK_DIM_QMD    = 64;
 	constexpr int BLOCK_PER_SM_QMD = 64;
 
 

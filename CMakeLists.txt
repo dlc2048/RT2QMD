@@ -1,3 +1,33 @@
+#
+# Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#  * Neither the name of NVIDIA CORPORATION nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# This CMakeLists code is based on OptiX SDK 7.6.0 example
+# https://developer.nvidia.com/designworks/optix/download
+
 
 # vcpkg for WIN32 (optinally possible in UNIX)
 set(USE_VCPKG OFF CACHE BOOL "Use vcpkg for third-party packages")
@@ -71,9 +101,10 @@ set(CUDA_VERBOSE_BUILD ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 # RT2QMD options and definitions
-option( MCRT2_NAN_THROW "Throw exception if NAN value is detected" OFF)
-option( MCRT2_RT2QMD_STANDALONE "RT2QMD standalone mode" ON) # DO NOT OFF this parameter in RT2QMD standalone package
+option( MCRT2_NAN_THROW                  "Throw exception if NAN value is detected" OFF)
+option( MCRT2_RT2QMD_STANDALONE          "RT2QMD standalone mode" ON) # DO NOT OFF this parameter in RT2QMD standalone package
 option( MCRT2_PERSISTENT_QMD_INITIALIZER "RT2QMD field dispatcher, using persistent loop" ON)
+option( MCRT2_ACTIVATE_TIMER             "Activate timer feature (for persistent loop benchmark)" OFF)
 
 if ( MCRT2_RT2QMD_STANDALONE )
   add_compile_definitions(RT2QMD_STANDALONE)
@@ -85,6 +116,10 @@ endif()
 
 if( MCRT2_PERSISTENT_QMD_INITIALIZER )
   add_compile_definitions(RT2QMD_PERSISTENT_DISPATCHER)
+endif()
+
+if( MCRT2_ACTIVATE_TIMER )
+  add_compile_definitions(RT2QMD_ACTIVATE_TIMER)
 endif()
 
 if( MSVC )

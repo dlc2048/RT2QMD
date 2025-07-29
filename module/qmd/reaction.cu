@@ -60,10 +60,12 @@ namespace RT2QMD {
         int meta_idx;
 
         Buffer::model_cached->meta_idx = -1;  // initial state
+#ifdef RT2QMD_ACTIVATE_TIMER
         if (USE_CLOCK) {
             if (!threadIdx.x)
                 timer[blockIdx.x] = clock64();
         }
+#endif
         __syncthreads();
 
         // persistent loop
@@ -158,11 +160,12 @@ namespace RT2QMD {
             }
             __syncthreads();
         }
-
+#ifdef RT2QMD_ACTIVATE_TIMER
         if (USE_CLOCK) {
             if (!threadIdx.x)
                 timer[blockIdx.x] = clock64() - timer[blockIdx.x];
         }
+#endif
         __syncthreads();
         return;
     }
@@ -175,17 +178,21 @@ namespace RT2QMD {
 
 
     __global__ void __kernel__pullEligibleField() {
+#ifdef RT2QMD_ACTIVATE_TIMER
         if (USE_CLOCK) {
             if (!threadIdx.x)
                 timer[blockIdx.x] = clock64();
         }
         __syncthreads();
+#endif
         Buffer::Metadata::current_metadata_idx[blockIdx.x] = Buffer::Metadata::meta_queue[1].pull();
+#ifdef RT2QMD_ACTIVATE_TIMER
         if (USE_CLOCK) {
             if (!threadIdx.x)
                 timer[blockIdx.x] = clock64() - timer[blockIdx.x];
         }
         __syncthreads();
+#endif
     }
 
 
@@ -491,10 +498,12 @@ namespace RT2QMD {
 
     __global__ void __kernel__prepareModel(int field_target) {
         Buffer::model_cached->meta_idx = blockIdx.x;
+#ifdef RT2QMD_ACTIVATE_TIMER
         if (USE_CLOCK) {
             if (!threadIdx.x)
                 timer[blockIdx.x] = clock64();
         }
+#endif
         __syncthreads();
         Buffer::readModelFromBuffer(blockIdx.x);
         __syncthreads();
@@ -502,11 +511,13 @@ namespace RT2QMD {
         __syncthreads();
         prepareImpact();
         Buffer::writeModelToBuffer(blockIdx.x);
+#ifdef RT2QMD_ACTIVATE_TIMER
         if (USE_CLOCK) {
             if (!threadIdx.x)
                 timer[blockIdx.x] = clock64() - timer[blockIdx.x];
         }
         __syncthreads();
+#endif
         return;
     }
     
@@ -518,10 +529,12 @@ namespace RT2QMD {
 
 
     __global__ void __kernel__prepareProjectile() {
+#ifdef RT2QMD_ACTIVATE_TIMER
         if (USE_CLOCK) {
             if (!threadIdx.x)
                 timer[blockIdx.x] = clock64();
         }
+#endif
         Buffer::readModelFromBuffer(blockIdx.x);
         __syncthreads();
         if (Buffer::model_cached->za_nuc[0].y != 1) {
@@ -536,11 +549,13 @@ namespace RT2QMD {
         }
         __syncthreads();
         Buffer::writeModelToBuffer(blockIdx.x);
+#ifdef RT2QMD_ACTIVATE_TIMER
         if (USE_CLOCK) {
             if (!threadIdx.x)
                 timer[blockIdx.x] = clock64() - timer[blockIdx.x];
         }
         __syncthreads();
+#endif
         return;
     }
 
@@ -552,10 +567,12 @@ namespace RT2QMD {
 
 
     __global__ void __kernel__prepareTarget() {
+#ifdef RT2QMD_ACTIVATE_TIMER
         if (USE_CLOCK) {
             if (!threadIdx.x)
                 timer[blockIdx.x] = clock64();
         }
+#endif
         Buffer::readModelFromBuffer(blockIdx.x);
         __syncthreads();
         if (Buffer::model_cached->za_nuc[1].y != 1) {
@@ -570,11 +587,13 @@ namespace RT2QMD {
         }
         __syncthreads();
         Buffer::writeModelToBuffer(blockIdx.x);
+#ifdef RT2QMD_ACTIVATE_TIMER
         if (USE_CLOCK) {
             if (!threadIdx.x)
                 timer[blockIdx.x] = clock64() - timer[blockIdx.x];
         }
         __syncthreads();
+#endif
         return;
     }
 
