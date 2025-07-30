@@ -1,0 +1,51 @@
+# See the input file 'ddx_he4cu63.inp' for more detail
+
+CUDA_SETTINGS --gpu 3 --block_per_sm 96 --buffer_ratio 0.6 
+
+
+YIELD   --name    n5         --part  neutron  --ascii   true  \
+        --erange  1e0  1e3   --ne    300      --escale  log   \
+        --dtheta   4.281009679380117    5.718990320619883     \
+        --za      0
+
+YIELD   --name    n10        --part  neutron  --ascii   true  \
+        --erange  1e0  1e3   --ne    300      --escale  log   \
+        --dtheta   9.281009679380116   10.718990320619884     \
+        --za      0
+
+YIELD   --name    n20        --part  neutron  --ascii   true  \
+        --erange  1e0  1e3   --ne    300      --escale  log   \
+        --dtheta  19.202182708221308   20.797817291778692     \
+        --za      0
+        
+YIELD   --name    n30        --part  neutron  --ascii   true  \
+        --erange  1e0  1e3   --ne    300      --escale  log   \
+        --dtheta  29.202182708221308   30.797817291778692     \
+        --za      0
+        
+YIELD   --name    n40        --part  neutron  --ascii   true  \
+        --erange  1e0  1e3   --ne    300      --escale  log   \
+        --dtheta  39.103944488974264   40.896055511025736     \
+        --za      0
+
+YIELD   --name    n60        --part  neutron  --ascii   true  \
+        --erange  1e0  1e3   --ne    300      --escale  log   \
+        --dtheta  58.978119039572675   61.021880960427325     \
+        --za      0
+        
+YIELD   --name    n80        --part  neutron  --ascii   true  \
+        --erange  1e0  1e3   --ne    300      --escale  log   \
+        --dtheta  78.81118958089147    81.18881041910853      \
+        --za      0
+    
+    
+QMD_SETTINGS   --nn_scattering geant4   --measure_time false
+        
+MODULE_TEST  --event     QMD     --hid        false  \
+             --full_mode true    --write_ps   false  \
+             --nps       1e8     --iter       1       
+
+EVENT  --energy   230.0  \
+       --weight   1.0    \
+       --zap      2004   \
+       --zat      29065

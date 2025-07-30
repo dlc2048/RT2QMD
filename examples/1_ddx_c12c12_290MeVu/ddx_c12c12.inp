@@ -1,0 +1,65 @@
+# QMD DDX benchmark, C12-C12 290 MeV/u event
+#
+# The attached file 'ddx_c12c12_sample.out' is a benchmark output
+# collected from an NVIDIA RTX 4090.
+#
+# 'ddx_c12c12_n{angle}_0.txt' are scoring results of neutron DDX.
+#
+# Example usage (QMD core):
+# >> [build_binary_path]/RT2QMD -i ddx_c12c12.inp -o ddx_c12c12.out
+#
+# Plot (against Geant4 and EXFOR data, require matplotlib and numpy):
+# >> python3 ddx.py
+# 
+# Attached image file 'ddx.svg' is the result of python script 
+#
+# EXFOR data from D. Satoh et al., “Measurement of neutron-production 
+# double-differential cross-sections on carbon bombarded with 
+# 290-MeV/nucleon carbon and oxygen ions,” Nucl Instrum Methods Phys 
+# Res A, vol. 644, no. 1, pp. 59–67, Jul. 2011,
+# doi: 10.1016/j.nima.2011.04.054
+
+
+CUDA_SETTINGS --gpu 0 --block_per_sm 96 --buffer_ratio 0.6 
+
+
+YIELD   --name    n15        --part  neutron  --ascii   true  \
+        --erange  1e0  1e3   --ne    300      --escale  log   \
+        --dtheta  14.069574889262483   15.930425110737517     \
+        --za      0  # no filter for the neutron
+
+YIELD   --name    n30        --part  neutron  --ascii   true  \
+        --erange  1e0  1e3   --ne    300      --escale  log   \
+        --dtheta  29.08593634870279    30.91406365129721      \
+        --za      0 
+
+YIELD   --name    n45        --part  neutron  --ascii   true  \
+        --erange  1e0  1e3   --ne    300      --escale  log   \
+        --dtheta  43.95762733764649    46.04237266235351      \
+        --za      0  
+        
+YIELD   --name    n60        --part  neutron  --ascii   true  \
+        --erange  1e0  1e3   --ne    300      --escale  log   \
+        --dtheta  58.74562044920385    61.25437955079615      \
+        --za      0 
+        
+YIELD   --name    n75        --part  neutron  --ascii   true  \
+        --erange  1e0  1e3   --ne    300      --escale  log   \
+        --dtheta  73.62732608161724    76.37267391838276      \
+        --za      0 
+
+YIELD   --name    n90        --part  neutron  --ascii   true  \
+        --erange  1e0  1e3   --ne    300      --escale  log   \
+        --dtheta  88.51531933018718    91.48468066981282      \
+        --za      0 
+
+QMD_SETTINGS   --nn_scattering geant4   --measure_time false
+        
+MODULE_TEST  --event     QMD     --hid        false  \
+             --full_mode true    --write_ps   false  \
+             --nps       1e8     --iter       1       
+
+EVENT  --energy   290.0  \
+       --weight   1.0    \
+       --zap      6012   \
+       --zat      6012

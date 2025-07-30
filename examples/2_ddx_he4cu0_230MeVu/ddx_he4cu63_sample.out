@@ -1,0 +1,184 @@
+ [2025-07-29 17:44:34] 
+ [INFO] Read input file stream 'ddx_he4cu63.inp'
+ [LINE]      2 CUDA_SETTINGS --gpu 2 --block_per_sm 96 --buffer_ratio 0.6
+ [WARNING] Field 'block_decay_limit' is not found. Use default value (1)
+ [WARNING] Field 'block_decay_rate' is not found. Use default value (0.2)
+ [WARNING] Field 'block_dim' is not found. Use default value (128)
+ [WARNING] Field 'seed' is not found. Use default value (42)
+ [LINE]     41 QMD_SETTINGS --nn_scattering geant4 --measure_time false
+ [WARNING] Field 'dump_action' is not found. Use default value (0)
+ [WARNING] Field 'dump_size' is not found. Use default value (1000)
+ [WARNING] Field 'timer_size' is not found. Use default value (20)
+ [LINE]     45 MODULE_TEST --event QMD --hid false --full_mode true --write_ps f
+        alse --nps 1e8 --iter 1
+ [LINE]     50 EVENT --energy 230.0 --weight 1.0 --zap 2004 --zat 29063
+ [WARNING] Field 'direction' is not found. Use default value (0)
+ [WARNING] Field 'direction' is not found. Use default value (0)
+ [WARNING] Field 'direction' is not found. Use default value (1)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [LINE]      8 YIELD --name n5 --part neutron --ascii true --erange 1e0 1e3 --ne
+         300 --escale log --dtheta 4.281009679380117 5.718990320619883 --za 0
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     13 YIELD --name n10 --part neutron --ascii true --erange 1e0 1e3 --n
+        e 300 --escale log --dtheta 9.281009679380116 10.718990320619884 --za 0
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     18 YIELD --name n20 --part neutron --ascii true --erange 1e0 1e3 --n
+        e 300 --escale log --dtheta 19.202182708221308 20.797817291778692 --za 0
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     23 YIELD --name n30 --part neutron --ascii true --erange 1e0 1e3 --n
+        e 300 --escale log --dtheta 29.202182708221308 30.797817291778692 --za 0
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     28 YIELD --name n40 --part neutron --ascii true --erange 1e0 1e3 --n
+        e 300 --escale log --dtheta 39.103944488974264 40.896055511025736 --za 0
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     33 YIELD --name n60 --part neutron --ascii true --erange 1e0 1e3 --n
+        e 300 --escale log --dtheta 58.978119039572675 61.021880960427325 --za 0
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     38 YIELD --name n80 --part neutron --ascii true --erange 1e0 1e3 --n
+        e 300 --escale log --dtheta 78.81118958089147 81.18881041910853 --za 0
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [2025-07-29 17:44:34] 
+ [INFO] Close input file stream
+ [2025-07-29 17:44:34] 
+ [INFO] All data are prepared!
+ [2025-07-29 17:44:34] 
+ [INFO] Module tester target intraction: Quantum Molecular Dynamics
+ [INFO] Module tester mode: Full
+ [INFO] Start kernel iteration
+ [INFO] 0st iteration
+ [2025-07-29 17:51:09] 
+ [INFO] NPS 5000000
+ [2025-07-29 17:56:08] 
+ [INFO] NPS 10000000
+ [2025-07-29 18:01:08] 
+ [INFO] NPS 15000000
+ [2025-07-29 18:06:08] 
+ [INFO] NPS 20000000
+ [2025-07-29 18:11:08] 
+ [INFO] NPS 25000000
+ [2025-07-29 18:17:48] 
+ [INFO] NPS 30000000
+ [2025-07-29 18:22:48] 
+ [INFO] NPS 35000000
+ [2025-07-29 18:27:48] 
+ [INFO] NPS 40000000
+ [2025-07-29 18:32:48] 
+ [INFO] NPS 45000000
+ [2025-07-29 18:37:48] 
+ [INFO] NPS 50000000
+ [2025-07-29 18:42:48] 
+ [INFO] NPS 55000000
+ [2025-07-29 18:49:27] 
+ [INFO] NPS 60000000
+ [2025-07-29 18:54:27] 
+ [INFO] NPS 65000000
+ [2025-07-29 18:59:27] 
+ [INFO] NPS 70000000
+ [2025-07-29 19:04:27] 
+ [INFO] NPS 75000000
+ [2025-07-29 19:09:27] 
+ [INFO] NPS 80000000
+ [2025-07-29 19:16:07] 
+ [INFO] NPS 85000000
+ [2025-07-29 19:21:06] 
+ [INFO] NPS 90000000
+ [2025-07-29 19:26:06] 
+ [INFO] NPS 95000000
+ [2025-07-29 19:31:06] 
+ [INFO] NPS 100000000
+ [2025-07-29 19:31:06] 
+ [INFO] End of main Monte Carlo stage
+ [INFO] Start the residual stage
+ [INFO] Block is set to 2457
+ [INFO] Block is set to 491
+ [INFO] Block is set to 98
+ [INFO] Block is set to 19
+ [INFO] Block is set to 3
+ [INFO] Block is set to 1
+ [INFO] *** Launch History ***
+  NPS setup                              100000000
+  Launched histories                     100663296
+  Total weight                           100663296
+ [INFO] *** Kernel Execution Histories ***
+  Electron Transport                             0 (Banks)
+  Photon Transport                       293804544 (Banks)
+  Positron Transport                             0 (Banks)
+  Low Energy Neutron Transport                   0 (Banks)
+  Generic Neutron Transport              761861167 (Banks)
+  Generic Ion Transport                  843648086 (Banks)
+  Atomic Relaxation                              0 (Banks)
+  Generic ion delta-ray                          0 (Banks)
+  Ion-Nuclear Reaction                           0 (Banks)
+  Boltzmann Master Equation                      0 (Banks)
+  Frag Secondary Particles              1706091776 (Banks)
+  Nuclear De-excitation                  590556672 (Banks)
+  Photon Evaporation                     293804672 (Banks)
+  Competitive Fission                            0 (Banks)
+ [INFO] *** Residual Banks ***
+  Electron Transport                             0 (Banks)
+  Photon Transport                             128 (Banks)
+  Positron Transport                             0 (Banks)
+  Low Energy Neutron Transport                   0 (Banks)
+  Generic Neutron Transport                      0 (Banks)
+  Generic Ion Transport                         65 (Banks)
+  Atomic Relaxation                              0 (Banks)
+  Generic ion delta-ray                          0 (Banks)
+  Ion-Nuclear Reaction                           0 (Banks)
+  Boltzmann Master Equation                      0 (Banks)
+  Frag Secondary Particles                      39 (Banks)
+  Nuclear De-excitation                         55 (Banks)
+  Photon Evaporation                           123 (Banks)
+  Competitive Fission                            0 (Banks)
+ [               n5 ]
+  Unit                                   #/sr/hist
+  Part0                                    Neutron
+  Energy from                                    1 (MeV)
+  Energy to                                   1000 (MeV)
+  Binning method                       log spacing
+  Number of bin                                300
+ [              n10 ]
+  Unit                                   #/sr/hist
+  Part0                                    Neutron
+  Energy from                                    1 (MeV)
+  Energy to                                   1000 (MeV)
+  Binning method                       log spacing
+  Number of bin                                300
+ [              n20 ]
+  Unit                                   #/sr/hist
+  Part0                                    Neutron
+  Energy from                                    1 (MeV)
+  Energy to                                   1000 (MeV)
+  Binning method                       log spacing
+  Number of bin                                300
+ [              n30 ]
+  Unit                                   #/sr/hist
+  Part0                                    Neutron
+  Energy from                                    1 (MeV)
+  Energy to                                   1000 (MeV)
+  Binning method                       log spacing
+  Number of bin                                300
+ [              n40 ]
+  Unit                                   #/sr/hist
+  Part0                                    Neutron
+  Energy from                                    1 (MeV)
+  Energy to                                   1000 (MeV)
+  Binning method                       log spacing
+  Number of bin                                300
+ [              n60 ]
+  Unit                                   #/sr/hist
+  Part0                                    Neutron
+  Energy from                                    1 (MeV)
+  Energy to                                   1000 (MeV)
+  Binning method                       log spacing
+  Number of bin                                300
+ [              n80 ]
+  Unit                                   #/sr/hist
+  Part0                                    Neutron
+  Energy from                                    1 (MeV)
+  Energy to                                   1000 (MeV)
+  Binning method                       log spacing
+  Number of bin                                300
+ [2025-07-29 19:31:06] 
+ [INFO] End of iteration

@@ -1,0 +1,65 @@
+ [2025-07-29 14:33:47] 
+ [INFO] Read input file stream 'get_dump.inp'
+ [LINE]      2 CUDA_SETTINGS --gpu 0 --block_per_sm 96 --buffer_ratio 0.6
+ [WARNING] Field 'block_decay_limit' is not found. Use default value (1)
+ [WARNING] Field 'block_decay_rate' is not found. Use default value (0.2)
+ [WARNING] Field 'block_dim' is not found. Use default value (128)
+ [WARNING] Field 'seed' is not found. Use default value (42)
+ [LINE]      4 QMD_SETTINGS --nn_scattering geant4 --measure_time false --dump_a
+        ction true
+ [WARNING] Field 'dump_size' is not found. Use default value (1000)
+ [WARNING] Field 'timer_size' is not found. Use default value (20)
+ [LINE]      8 MODULE_TEST --event QMD --hid false --full_mode false --write_ps 
+        false --nps 1e5 --iter 1
+ [LINE]     13 EVENT --energy 290.0 --weight 1.0 --zap 6012 --zat 6012
+ [WARNING] Field 'direction' is not found. Use default value (0)
+ [WARNING] Field 'direction' is not found. Use default value (0)
+ [WARNING] Field 'direction' is not found. Use default value (1)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [2025-07-29 14:33:48] 
+ [INFO] Close input file stream
+ [2025-07-29 14:33:50] 
+ [INFO] All data are prepared!
+ [2025-07-29 14:33:50] 
+ [INFO] Module tester target intraction: Quantum Molecular Dynamics
+ [INFO] Module tester mode: Event
+ [INFO] Start kernel iteration
+ [INFO] 0st iteration
+ [INFO] *** Launch History ***
+  NPS setup                                 100000
+  Launched histories                        417792
+  Total weight                              417792
+ [INFO] *** Kernel Execution Histories ***
+  Electron Transport                             0 (Banks)
+  Photon Transport                               0 (Banks)
+  Positron Transport                             0 (Banks)
+  Low Energy Neutron Transport                   0 (Banks)
+  Generic Neutron Transport                      0 (Banks)
+  Generic Ion Transport                          0 (Banks)
+  Atomic Relaxation                              0 (Banks)
+  Generic ion delta-ray                          0 (Banks)
+  Ion-Nuclear Reaction                           0 (Banks)
+  Boltzmann Master Equation                      0 (Banks)
+  Frag Secondary Particles                       0 (Banks)
+  Nuclear De-excitation                          0 (Banks)
+  Photon Evaporation                             0 (Banks)
+  Competitive Fission                            0 (Banks)
+ [INFO] *** Residual Banks ***
+  Electron Transport                             0 (Banks)
+  Photon Transport                               0 (Banks)
+  Positron Transport                             0 (Banks)
+  Low Energy Neutron Transport                   0 (Banks)
+  Generic Neutron Transport                      0 (Banks)
+  Generic Ion Transport                          0 (Banks)
+  Atomic Relaxation                              0 (Banks)
+  Generic ion delta-ray                          0 (Banks)
+  Ion-Nuclear Reaction                           0 (Banks)
+  Boltzmann Master Equation                      0 (Banks)
+  Frag Secondary Particles                 3431051 (Banks)
+  Nuclear De-excitation                     913715 (Banks)
+  Photon Evaporation                             0 (Banks)
+  Competitive Fission                            0 (Banks)
+ [2025-07-29 14:42:05] 
+ [INFO] End of iteration

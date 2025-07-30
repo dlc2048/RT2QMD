@@ -1,0 +1,34 @@
+# QMD mean field dump, C12-C12 290 MeV/u event
+#
+# To generate valid dump data, CMAKE_BUILD_TYPE must be set to 'Debug',
+# because dump feature is disabled in Release builds for optimization.
+#
+# The attached file 'get_dump_sample.out' is a benchmark output
+# collected from an NVIDIA RTX 4060 Ti.
+#
+# The Python interface 'rt2qmd.qmd.QMDDump' can be used to load
+# the generated QMD dump file 'QMD_dump.bin'.
+#
+# Example usage (QMD core):
+# >> [build_binary_path]/RT2QMD -i get_dump.inp -o get_dump.out
+#
+# Python Interface:
+# >> python3
+# >> from rt2qmd.qmd import QMDDump
+# >> data = QMDDump('QMD_dump.bin')
+# 
+# GIF animation generator 
+# >> python3 ani.py
+
+CUDA_SETTINGS --gpu 0 --block_per_sm 96 --buffer_ratio 0.6  
+
+QMD_SETTINGS   --nn_scattering geant4   --measure_time false   --dump_action true
+        
+MODULE_TEST  --event     QMD     --hid        false  \
+             --full_mode false   --write_ps   false  \
+             --nps       1e5     --iter       1       
+
+EVENT  --energy   290.0  \
+       --weight   1.0    \
+       --zap      6012   \
+       --zat      6012
