@@ -8,7 +8,9 @@ MAX_DIMENSION_CLUSTER = 256
 
 
 DTYPE_QMD_MODEL  = np.dtype([
-    ('particlpant_idx'         , np.uint8   , 256),
+    ('__pad'                   , np.int32   , 2),
+    ('meta_idx'                , np.int32),
+    ('particlpant_idx'         , np.uint8   , MAX_DIMENSION_CLUSTER),
     ('initial_flags'           , np.uint32) ,
     ('offset_1d'               , np.int32)  ,
     ('offset_2d'               , np.int32)  ,
@@ -20,6 +22,7 @@ DTYPE_QMD_MODEL  = np.dtype([
     ('initial_polar'           , np.float32 , 2),
     ('initial_azim'            , np.float32 , 2),
     ('maximum_impact_parameter', np.float32),
+    ('nuc_counter'             , np.uint8   , 4),
     ('za_nuc'                  , np.int16   , 4),
     ('mass'                    , np.float32 , 2),
     ('beta_lab_nn'             , np.float32),
