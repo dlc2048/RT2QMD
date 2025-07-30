@@ -120,7 +120,7 @@ namespace auxiliary {
                 mclog::fatal("'zap' should be positive");
             else if (za_aux1.y > 255)
                 mclog::fatal("'zap' should be smaller than 256");
-            else if (za_aux1.x >= za_aux1.y)
+            else if (za_aux1.x > za_aux1.y)
                 mclog::fatal("'zap' Z number should be smaller than A number");
 
             if (this->_settings.bid() == mcutil::BUFFER_TYPE::QMD) {
@@ -128,7 +128,7 @@ namespace auxiliary {
                     mclog::fatal("'zat' should be positive");
                 else if (za_aux2.y > 255)
                     mclog::fatal("'zat' should be smaller than 256");
-                else if (za_aux2.x >= za_aux2.y)
+                else if (za_aux2.x >  za_aux2.y)
                     mclog::fatal("'zat' Z number should be smaller than A number");
 
                 if (za_aux1.y + za_aux2.y > (int)UCHAR_MAX)
