@@ -1,0 +1,71 @@
+# QMD model for heterogeneity test, C12-PMMA 400 MeV/u event
+# This input test the stochastic event scenario 
+# that can be possible in particle transport Monte Carlo application.
+#
+# The attached file 'heterogeneous_sample.out' is a benchmark output
+# collected from an NVIDIA RTX 4090.
+#
+# 'heterogeneous_a{angle}_0.txt' are scoring results of alpha DDX.
+#
+# Example usage (QMD core):
+# >> [build_binary_path]/RT2QMD -i heterogeneous.inp -o heterogeneous.out
+#
+# Plot (require matplotlib and numpy):
+# >> python3 ddx.py
+#
+# Attached image file 'ddx.svg' is the result of python script
+
+
+CUDA_SETTINGS --gpu 2 --block_per_sm 96 --buffer_ratio 0.6 
+
+
+YIELD   --name    a15         --part  ion      --ascii   true   \
+        --erange  1e0  1e3    --ne    300      --escale  log    \
+        --dtheta   12  18     \
+        --za      2004
+
+YIELD   --name    a30         --part  ion      --ascii   true   \
+        --erange  1e0  1e3    --ne    300      --escale  log    \
+        --dtheta   27 30      \
+        --za      2004
+
+YIELD   --name    a45         --part  ion      --ascii   true   \
+        --erange  1e0  1e3    --ne    300      --escale  log    \
+        --dtheta   42 48      \
+        --za      2004
+        
+YIELD   --name    a60         --part  ion      --ascii   true   \
+        --erange  1e0  1e3    --ne    300      --escale  log    \
+        --dtheta   57 63      \
+        --za      2004
+
+
+QMD_SETTINGS   --nn_scattering geant4   --measure_time false
+        
+MODULE_TEST  --event     QMD     --hid        false  \
+             --full_mode true    --write_ps   false  \
+             --nps       1e8     --iter       1       
+
+# 400 MeV/u
+# Carbon - PMMA (C5O2H8)
+# from Glauber-Gribov model,
+# weight C12-H1  = 0.3174 (barn) X 8 (Abundance)
+# weight C12-C12 = 0.9233 (barn) X 5 (Abundance)
+# weight C12-O16 = 1.0620 (barn) X 2 (Abundance)
+# Total weight is automatically normalized to 1
+
+EVENT  --energy   400.0  \
+       --weight   2.5392 \
+       --zap      6012   \
+       --zat      1001
+       
+EVENT  --energy   400.0  \
+       --weight   4.6165 \
+       --zap      6012   \
+       --zat      6012
+          
+EVENT  --energy   400.0  \
+       --weight   2.124  \
+       --zap      6012   \
+       --zat      8016
+

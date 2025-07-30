@@ -1,0 +1,176 @@
+ [2025-07-30 15:55:18] 
+ [INFO] Read input file stream 'heterogeneous.inp'
+ [LINE]      2 CUDA_SETTINGS --gpu 2 --block_per_sm 96 --buffer_ratio 0.6
+ [WARNING] Field 'block_decay_limit' is not found. Use default value (1)
+ [WARNING] Field 'block_decay_rate' is not found. Use default value (0.2)
+ [WARNING] Field 'block_dim' is not found. Use default value (128)
+ [WARNING] Field 'seed' is not found. Use default value (42)
+ [LINE]     26 QMD_SETTINGS --nn_scattering geant4 --measure_time false
+ [WARNING] Field 'dump_action' is not found. Use default value (0)
+ [WARNING] Field 'dump_size' is not found. Use default value (1000)
+ [WARNING] Field 'timer_size' is not found. Use default value (20)
+ [LINE]     30 MODULE_TEST --event QMD --hid false --full_mode true --write_ps f
+        alse --nps 1e8 --iter 1
+ [LINE]     43 EVENT --energy 400.0 --weight 2.5392 --zap 6012 --zat 1001
+ [WARNING] Field 'direction' is not found. Use default value (0)
+ [WARNING] Field 'direction' is not found. Use default value (0)
+ [WARNING] Field 'direction' is not found. Use default value (1)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [LINE]     48 EVENT --energy 400.0 --weight 4.6165 --zap 6012 --zat 6012
+ [WARNING] Field 'direction' is not found. Use default value (0)
+ [WARNING] Field 'direction' is not found. Use default value (0)
+ [WARNING] Field 'direction' is not found. Use default value (1)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [LINE]     53 EVENT --energy 400.0 --weight 2.124 --zap 6012 --zat 8016
+ [WARNING] Field 'direction' is not found. Use default value (0)
+ [WARNING] Field 'direction' is not found. Use default value (0)
+ [WARNING] Field 'direction' is not found. Use default value (1)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [LINE]      8 YIELD --name a15 --part ion --ascii true --erange 1e0 1e3 --ne 30
+        0 --escale log --dtheta 12 18 --za 2004
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     13 YIELD --name a30 --part ion --ascii true --erange 1e0 1e3 --ne 30
+        0 --escale log --dtheta 27 30 --za 2004
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     18 YIELD --name a45 --part ion --ascii true --erange 1e0 1e3 --ne 30
+        0 --escale log --dtheta 42 48 --za 2004
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     23 YIELD --name a60 --part ion --ascii true --erange 1e0 1e3 --ne 30
+        0 --escale log --dtheta 57 63 --za 2004
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [2025-07-30 15:55:18] 
+ [INFO] Close input file stream
+ [2025-07-30 15:55:18] 
+ [INFO] All data are prepared!
+ [2025-07-30 15:55:18] 
+ [INFO] Module tester target intraction: Quantum Molecular Dynamics
+ [INFO] Module tester mode: Full
+ [INFO] Start kernel iteration
+ [INFO] 0st iteration
+ [2025-07-30 15:56:09] 
+ [INFO] NPS 5000000
+ [2025-07-30 15:56:49] 
+ [INFO] NPS 10000000
+ [2025-07-30 15:57:28] 
+ [INFO] NPS 15000000
+ [2025-07-30 15:58:07] 
+ [INFO] NPS 20000000
+ [2025-07-30 15:58:46] 
+ [INFO] NPS 25000000
+ [2025-07-30 15:59:39] 
+ [INFO] NPS 30000000
+ [2025-07-30 16:00:18] 
+ [INFO] NPS 35000000
+ [2025-07-30 16:00:57] 
+ [INFO] NPS 40000000
+ [2025-07-30 16:01:37] 
+ [INFO] NPS 45000000
+ [2025-07-30 16:02:16] 
+ [INFO] NPS 50000000
+ [2025-07-30 16:02:55] 
+ [INFO] NPS 55000000
+ [2025-07-30 16:03:48] 
+ [INFO] NPS 60000000
+ [2025-07-30 16:04:27] 
+ [INFO] NPS 65000000
+ [2025-07-30 16:05:06] 
+ [INFO] NPS 70000000
+ [2025-07-30 16:05:46] 
+ [INFO] NPS 75000000
+ [2025-07-30 16:06:25] 
+ [INFO] NPS 80000000
+ [2025-07-30 16:07:17] 
+ [INFO] NPS 85000000
+ [2025-07-30 16:07:57] 
+ [INFO] NPS 90000000
+ [2025-07-30 16:08:36] 
+ [INFO] NPS 95000000
+ [2025-07-30 16:09:15] 
+ [INFO] NPS 100000000
+ [2025-07-30 16:09:15] 
+ [INFO] End of main Monte Carlo stage
+ [INFO] Start the residual stage
+ [INFO] Block is set to 2457
+ [INFO] Block is set to 491
+ [INFO] Block is set to 98
+ [INFO] Block is set to 19
+ [INFO] Block is set to 3
+ [INFO] Block is set to 1
+ [INFO] *** Launch History ***
+  NPS setup                              100000000
+  Launched histories                     100663296
+  Total weight                           100663296
+ [INFO] *** Kernel Execution Histories ***
+  Electron Transport                             0 (Banks)
+  Photon Transport                       267632640 (Banks)
+  Positron Transport                             0 (Banks)
+  Low Energy Neutron Transport                   0 (Banks)
+  Generic Neutron Transport              409472416 (Banks)
+  Generic Ion Transport                  700794848 (Banks)
+  Atomic Relaxation                              0 (Banks)
+  Generic ion delta-ray                          0 (Banks)
+  Ion-Nuclear Reaction                           0 (Banks)
+  Boltzmann Master Equation                      0 (Banks)
+  Frag Secondary Particles              1110267264 (Banks)
+  Nuclear De-excitation                  452543360 (Banks)
+  Photon Evaporation                     267632640 (Banks)
+  Competitive Fission                            0 (Banks)
+ [INFO] *** Residual Banks ***
+  Electron Transport                             0 (Banks)
+  Photon Transport                               0 (Banks)
+  Positron Transport                             0 (Banks)
+  Low Energy Neutron Transport                   0 (Banks)
+  Generic Neutron Transport                      0 (Banks)
+  Generic Ion Transport                          0 (Banks)
+  Atomic Relaxation                              0 (Banks)
+  Generic ion delta-ray                          0 (Banks)
+  Ion-Nuclear Reaction                           0 (Banks)
+  Boltzmann Master Equation                      0 (Banks)
+  Frag Secondary Particles                     149 (Banks)
+  Nuclear De-excitation                         40 (Banks)
+  Photon Evaporation                            93 (Banks)
+  Competitive Fission                            0 (Banks)
+ [              a15 ]
+  Unit                                   #/sr/hist
+  Part0                                Generic Ion
+  Ion Filter                                    On
+      2004
+  Energy from                                    1 (MeV)
+  Energy to                                   1000 (MeV)
+  Binning method                       log spacing
+  Number of bin                                300
+ [              a30 ]
+  Unit                                   #/sr/hist
+  Part0                                Generic Ion
+  Ion Filter                                    On
+      2004
+  Energy from                                    1 (MeV)
+  Energy to                                   1000 (MeV)
+  Binning method                       log spacing
+  Number of bin                                300
+ [              a45 ]
+  Unit                                   #/sr/hist
+  Part0                                Generic Ion
+  Ion Filter                                    On
+      2004
+  Energy from                                    1 (MeV)
+  Energy to                                   1000 (MeV)
+  Binning method                       log spacing
+  Number of bin                                300
+ [              a60 ]
+  Unit                                   #/sr/hist
+  Part0                                Generic Ion
+  Ion Filter                                    On
+      2004
+  Energy from                                    1 (MeV)
+  Energy to                                   1000 (MeV)
+  Binning method                       log spacing
+  Number of bin                                300
+ [2025-07-30 16:09:15] 
+ [INFO] End of iteration
