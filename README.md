@@ -76,3 +76,39 @@ MCRT2_HOME = $(RT2QMD_home_directory)
 cd RT2QMD/interface
 
 pip3 install .
+
+## Backgrounds
+
+- This package is based on the relativistic Quantum Molecular Dynamics (QMD) model (https://doi.org/10.1016/0370-1573(91)90094-3)
+
+- GPU implemented with reference to Geant4 QMD model
+
+- This event generator is part of the RT2 Monte Carlo code (https://doi.org/10.1088/1361-6560/ad694f)
+
+## License
+
+Apache-2.0 License. See **LICENSE** for details
+
+## Contact
+
+### Technical or bug issues
+
+Author: Chang-Min Lee
+
+Email: dlc2048@snu.ac.kr
+
+### Corresponding author
+
+Author: Sung-Joon Ye
+
+Email: sye@snu.ac.kr
+
+## Examples
+
+- Example 1. C12-C12 neutron DDX [/examples/1_ddx_c12c12_290MeVu]
+
+![Neutron DDX](./examples/1_ddx_c12c12_290MeVu/ddx.svg)
+
+- Example 5. C12-C12 collision dump [/examples/5_qmd_dump]
+
+![C12-C12 collision dump](./examples/5_qmd_dump/event.gif)
