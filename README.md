@@ -13,8 +13,6 @@ Cross-platform support:
  - Windows 10 
  - Ubuntu
 
-![C12-C12 collision dump](./examples/5_qmd_dump/event.gif)
-
 ## Getting Started
 
 ### Requirements
@@ -78,3 +76,9 @@ MCRT2_HOME = $(RT2QMD_home_directory)
 cd RT2QMD/interface
 
 pip3 install .
+
+## Examples
+
+![C12-C12 collision dump](./examples/5_qmd_dump/event.gif)
+
+![Neutron DDX](./examples/1_ddx_c12c12_290MeVu/ddx.svg)
