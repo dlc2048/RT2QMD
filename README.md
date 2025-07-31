@@ -13,6 +13,8 @@ Cross-platform support:
  - Windows 10 
  - Ubuntu
 
+![C12-C12 collision dump](./examples/5_qmd_dump/event.gif)
+
 ## Getting Started
 
 ### Requirements
