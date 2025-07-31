@@ -83,6 +83,8 @@ pip3 install .
 
 - GPU implemented with reference to Geant4 QMD model
 
+- This event generator is part of the RT2 Monte Carlo code (https://doi.org/10.1088/1361-6560/ad694f)
+
 ## License
 
 Apache-2.0 License. See **LICENSE** for details
