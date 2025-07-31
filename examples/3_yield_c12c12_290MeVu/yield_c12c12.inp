@@ -1,0 +1,69 @@
+# QMD fragment yield benchmark, C12-C12 200 MeV/u event
+#
+# The attached file 'yield_c12c12_sample.out' is a benchmark output
+# collected from an NVIDIA RTX 4090.
+#
+# 'yield_c12c12_{isotope}_0.txt' are scoring results of isotope yield.
+#
+# Example usage (QMD core):
+# >> [build_binary_path]/RT2QMD -i yield_c12c12.inp -o yield_c12c12.out
+#
+# Print results:
+# >> python3 yield.py
+# 
+# Referenced experiment is T. Ogawa, T. Sato, S. Hashimoto, D. Satoh, 
+# S. Tsuda, and K. Niita, “Energy-dependent fragmentation cross sections 
+# of relativistic C 12,” Phys Rev C Nucl Phys, vol. 92, no. 2, Aug. 2015,
+# doi: 10.1103/PhysRevC.92.024614.
+
+
+CUDA_SETTINGS --gpu 3 --block_per_sm 96 --buffer_ratio 0.6 
+
+
+# dtheta is (0,180) degree  -> 4 pi (all direction)
+# energy cutoff is 10 MeV/u -> in referenced experiment, TOF distance = 5 m. 
+# Thus secondary fragments from the target nucleus cannot reach to the detector.
+
+
+YIELD   --name    b11        --part  ion      --ascii   true   \
+        --erange  1e1  1e5   --ne    1        --escale  linear \
+        --dtheta  0   180    --za    5011
+        
+YIELD   --name    b10        --part  ion      --ascii   true   \
+        --erange  1e1  1e5   --ne    1        --escale  linear \
+        --dtheta  0   180    --za    5010
+        
+YIELD   --name    be10       --part  ion      --ascii   true   \
+        --erange  1e1  1e5   --ne    1        --escale  linear \
+        --dtheta  0   180    --za    4010
+        
+YIELD   --name    be9        --part  ion      --ascii   true   \
+        --erange  1e1  1e5   --ne    1        --escale  linear \
+        --dtheta  0   180    --za    4009
+        
+YIELD   --name    be7        --part  ion      --ascii   true   \
+        --erange  1e1  1e5   --ne    1        --escale  linear \
+        --dtheta  0   180    --za    4007
+        
+YIELD   --name    li8        --part  ion      --ascii   true   \
+        --erange  1e1  1e5   --ne    1        --escale  linear \
+        --dtheta  0   180    --za    3008
+        
+YIELD   --name    li7        --part  ion      --ascii   true   \
+        --erange  1e1  1e5   --ne    1        --escale  linear \
+        --dtheta  0   180    --za    3007
+        
+YIELD   --name    li6        --part  ion      --ascii   true   \
+        --erange  1e1  1e5   --ne    1        --escale  linear \
+        --dtheta  0   180    --za    3006
+
+QMD_SETTINGS   --nn_scattering geant4   --measure_time false
+        
+MODULE_TEST  --event     QMD     --hid        false  \
+             --full_mode true    --write_ps   false  \
+             --nps       1e8     --iter       1       
+
+EVENT  --energy   200.0  \
+       --weight   1.0    \
+       --zap      6012   \
+       --zat      6012

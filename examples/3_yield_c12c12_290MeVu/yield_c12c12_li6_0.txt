@@ -1,0 +1,7 @@
+          Format            YIELD 
+            Name              li6 
+            Unit        #/sr/hist 
+            Part      Generic Ion 
+
+          Emin           Emax          Value    Uncertainty 
+     10.000000   1.000000e+05       0.002735   5.282646e-04 

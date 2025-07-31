@@ -1,0 +1,210 @@
+ [2025-07-31 10:18:29] 
+ [INFO] Read input file stream 'yield_c12c12.inp'
+ [LINE]      3 CUDA_SETTINGS --gpu 3 --block_per_sm 96 --buffer_ratio 0.6
+ [WARNING] Field 'block_decay_limit' is not found. Use default value (1)
+ [WARNING] Field 'block_decay_rate' is not found. Use default value (0.2)
+ [WARNING] Field 'block_dim' is not found. Use default value (128)
+ [WARNING] Field 'seed' is not found. Use default value (42)
+ [LINE]     38 QMD_SETTINGS --nn_scattering geant4 --measure_time false
+ [WARNING] Field 'dump_action' is not found. Use default value (0)
+ [WARNING] Field 'dump_size' is not found. Use default value (1000)
+ [WARNING] Field 'timer_size' is not found. Use default value (20)
+ [LINE]     42 MODULE_TEST --event QMD --hid false --full_mode true --write_ps f
+        alse --nps 1e8 --iter 1
+ [LINE]     47 EVENT --energy 200.0 --weight 1.0 --zap 6012 --zat 6012
+ [WARNING] Field 'direction' is not found. Use default value (0)
+ [WARNING] Field 'direction' is not found. Use default value (0)
+ [WARNING] Field 'direction' is not found. Use default value (1)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [WARNING] Field 'position' is not found. Use default value (0)
+ [LINE]      8 YIELD --name b11 --part ion --ascii true --erange 1e1 1e5 --ne 1 
+        --escale linear --dtheta 0 180 --za 5011
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     12 YIELD --name b10 --part ion --ascii true --erange 1e1 1e5 --ne 1 
+        --escale linear --dtheta 0 180 --za 5010
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     16 YIELD --name be10 --part ion --ascii true --erange 1e1 1e5 --ne 1
+         --escale linear --dtheta 0 180 --za 4010
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     20 YIELD --name be9 --part ion --ascii true --erange 1e1 1e5 --ne 1 
+        --escale linear --dtheta 0 180 --za 4009
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     24 YIELD --name be7 --part ion --ascii true --erange 1e1 1e5 --ne 1 
+        --escale linear --dtheta 0 180 --za 4007
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     28 YIELD --name li8 --part ion --ascii true --erange 1e1 1e5 --ne 1 
+        --escale linear --dtheta 0 180 --za 3008
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     32 YIELD --name li7 --part ion --ascii true --erange 1e1 1e5 --ne 1 
+        --escale linear --dtheta 0 180 --za 3007
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [LINE]     36 YIELD --name li6 --part ion --ascii true --erange 1e1 1e5 --ne 1 
+        --escale linear --dtheta 0 180 --za 3006
+ [WARNING] Field 'overwrite' is not found. Use default value (1)
+ [2025-07-31 10:18:29] 
+ [INFO] Close input file stream
+ [2025-07-31 10:18:29] 
+ [INFO] All data are prepared!
+ [2025-07-31 10:18:29] 
+ [INFO] Module tester target intraction: Quantum Molecular Dynamics
+ [INFO] Module tester mode: Full
+ [INFO] Start kernel iteration
+ [INFO] 0st iteration
+ [2025-07-31 10:19:24] 
+ [INFO] NPS 5000000
+ [2025-07-31 10:20:06] 
+ [INFO] NPS 10000000
+ [2025-07-31 10:20:47] 
+ [INFO] NPS 15000000
+ [2025-07-31 10:21:29] 
+ [INFO] NPS 20000000
+ [2025-07-31 10:22:11] 
+ [INFO] NPS 25000000
+ [2025-07-31 10:23:07] 
+ [INFO] NPS 30000000
+ [2025-07-31 10:23:48] 
+ [INFO] NPS 35000000
+ [2025-07-31 10:24:30] 
+ [INFO] NPS 40000000
+ [2025-07-31 10:25:12] 
+ [INFO] NPS 45000000
+ [2025-07-31 10:25:54] 
+ [INFO] NPS 50000000
+ [2025-07-31 10:26:35] 
+ [INFO] NPS 55000000
+ [2025-07-31 10:27:31] 
+ [INFO] NPS 60000000
+ [2025-07-31 10:28:13] 
+ [INFO] NPS 65000000
+ [2025-07-31 10:28:54] 
+ [INFO] NPS 70000000
+ [2025-07-31 10:29:36] 
+ [INFO] NPS 75000000
+ [2025-07-31 10:30:18] 
+ [INFO] NPS 80000000
+ [2025-07-31 10:31:14] 
+ [INFO] NPS 85000000
+ [2025-07-31 10:31:55] 
+ [INFO] NPS 90000000
+ [2025-07-31 10:32:37] 
+ [INFO] NPS 95000000
+ [2025-07-31 10:33:19] 
+ [INFO] NPS 100000000
+ [2025-07-31 10:33:19] 
+ [INFO] End of main Monte Carlo stage
+ [INFO] Start the residual stage
+ [INFO] Block is set to 2457
+ [INFO] Block is set to 491
+ [INFO] Block is set to 98
+ [INFO] Block is set to 19
+ [INFO] Block is set to 3
+ [INFO] Block is set to 1
+ [INFO] *** Launch History ***
+  NPS setup                              100000000
+  Launched histories                     100663296
+  Total weight                           100663296
+ [INFO] *** Kernel Execution Histories ***
+  Electron Transport                             0 (Banks)
+  Photon Transport                       310743552 (Banks)
+  Positron Transport                             0 (Banks)
+  Low Energy Neutron Transport                   0 (Banks)
+  Generic Neutron Transport              441151528 (Banks)
+  Generic Ion Transport                  767008310 (Banks)
+  Atomic Relaxation                              0 (Banks)
+  Generic ion delta-ray                          0 (Banks)
+  Ion-Nuclear Reaction                           0 (Banks)
+  Boltzmann Master Equation                      0 (Banks)
+  Frag Secondary Particles              1208160000 (Banks)
+  Nuclear De-excitation                  519183616 (Banks)
+  Photon Evaporation                     310743552 (Banks)
+  Competitive Fission                            0 (Banks)
+ [INFO] *** Residual Banks ***
+  Electron Transport                             0 (Banks)
+  Photon Transport                               0 (Banks)
+  Positron Transport                             0 (Banks)
+  Low Energy Neutron Transport                   0 (Banks)
+  Generic Neutron Transport                     34 (Banks)
+  Generic Ion Transport                        128 (Banks)
+  Atomic Relaxation                              0 (Banks)
+  Generic ion delta-ray                          0 (Banks)
+  Ion-Nuclear Reaction                           0 (Banks)
+  Boltzmann Master Equation                      0 (Banks)
+  Frag Secondary Particles                     117 (Banks)
+  Nuclear De-excitation                        113 (Banks)
+  Photon Evaporation                            49 (Banks)
+  Competitive Fission                            0 (Banks)
+ [              b11 ]
+  Unit                                   #/sr/hist
+  Part0                                Generic Ion
+  Ion Filter                                    On
+      5011
+  Energy from                                   10 (MeV)
+  Energy to                                 100000 (MeV)
+  Binning method                    linear spacing
+  Number of bin                                  1
+ [              b10 ]
+  Unit                                   #/sr/hist
+  Part0                                Generic Ion
+  Ion Filter                                    On
+      5010
+  Energy from                                   10 (MeV)
+  Energy to                                 100000 (MeV)
+  Binning method                    linear spacing
+  Number of bin                                  1
+ [             be10 ]
+  Unit                                   #/sr/hist
+  Part0                                Generic Ion
+  Ion Filter                                    On
+      4010
+  Energy from                                   10 (MeV)
+  Energy to                                 100000 (MeV)
+  Binning method                    linear spacing
+  Number of bin                                  1
+ [              be9 ]
+  Unit                                   #/sr/hist
+  Part0                                Generic Ion
+  Ion Filter                                    On
+      4009
+  Energy from                                   10 (MeV)
+  Energy to                                 100000 (MeV)
+  Binning method                    linear spacing
+  Number of bin                                  1
+ [              be7 ]
+  Unit                                   #/sr/hist
+  Part0                                Generic Ion
+  Ion Filter                                    On
+      4007
+  Energy from                                   10 (MeV)
+  Energy to                                 100000 (MeV)
+  Binning method                    linear spacing
+  Number of bin                                  1
+ [              li8 ]
+  Unit                                   #/sr/hist
+  Part0                                Generic Ion
+  Ion Filter                                    On
+      3008
+  Energy from                                   10 (MeV)
+  Energy to                                 100000 (MeV)
+  Binning method                    linear spacing
+  Number of bin                                  1
+ [              li7 ]
+  Unit                                   #/sr/hist
+  Part0                                Generic Ion
+  Ion Filter                                    On
+      3007
+  Energy from                                   10 (MeV)
+  Energy to                                 100000 (MeV)
+  Binning method                    linear spacing
+  Number of bin                                  1
+ [              li6 ]
+  Unit                                   #/sr/hist
+  Part0                                Generic Ion
+  Ion Filter                                    On
+      3006
+  Energy from                                   10 (MeV)
+  Energy to                                 100000 (MeV)
+  Binning method                    linear spacing
+  Number of bin                                  1
+ [2025-07-31 10:33:19] 
+ [INFO] End of iteration
