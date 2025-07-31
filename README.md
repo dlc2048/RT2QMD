@@ -77,6 +77,30 @@ cd RT2QMD/interface
 
 pip3 install .
 
+## Backgrounds
+
+- This package is based on the relativistic Quantum Molecular Dynamics (QMD) model (https://doi.org/10.1016/0370-1573(91)90094-3)
+
+- GPU implemented with reference to Geant4 QMD model
+
+## License
+
+Apache-2.0 License. See **LICENSE** for details
+
+## Contact
+
+### Technical or bug issues
+
+Author: Chang-Min Lee
+
+Email: dlc2048@snu.ac.kr
+
+### Corresponding author
+
+Author: Sung-Joon Ye
+
+Email: sye@snu.ac.kr
+
 ## Examples
 
 - Example 1. C12-C12 neutron DDX [/examples/1_ddx_c12c12_290MeVu]
