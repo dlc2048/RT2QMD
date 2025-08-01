@@ -83,7 +83,7 @@ pip3 install .
 
 RT2QMD -i [input_file.txt] -o [output_log.txt]
 
-See input_syntax.md for more detail
+See [input_syntax.pdf] for more detail
 
 ## Backgrounds
 
