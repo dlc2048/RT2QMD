@@ -2,6 +2,8 @@
 RT2 Quantum Molecular Dynamics (QMD) Event Generator for nucleus-nucleus collision simulation
 
 ## Features
+- GPU-accelerated QMD model
+
 - Generates phase-space distributions of secondary particles from nucleus-nucleus collision events:
   - photons, neutrons, protons, and heavier nuclei
 
