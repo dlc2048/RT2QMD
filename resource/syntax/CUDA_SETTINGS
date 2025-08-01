@@ -1,0 +1,32 @@
+  gpu               [int]  : The ID of the GPU on which the code run. GPU
+                             list can be found in command 'nvidia-smi'.
+  block_dim         [int]  : The number of threads in a single block.
+                             The total number of threads is product of the
+                             block_dim, block_per_sm, and the number of 
+                             stream multiprocessor (SM). Here, the number 
+                             of SM is determined by hardware specification.
+  block_per_sm      [int]  : The number of block per stream multiprocessor.
+                             If the metric 'Volatile GPU-Util' in the
+                             'nvidia-smi' is not saturated, block_dim should
+                             be increased to achieve peak performance.
+  buffer_ratio      [float]: The ratio of memory share of particle and 
+                             interaction buffer per total GPU memory capacity.
+                             If the error caused by the buffer size is raised,
+                             this parameter should be increased.
+  block_decay_rate  [float]: The decay rate of the block of launched kernel 
+                             at the residual stage. This parameter can be 
+                             tuned heuristically to achieve peak performance.
+                             Generally, this parameter should have a value 
+                             close to 1 when activating a computationally 
+                             intensive interaction (e.g. Doppler broadened 
+                             Compton scattering).
+  block_decay_limit [int]  : The lower bound on the number of the block in the 
+                             launched kernel. When the decayed number of 
+                             blocks become smaller than this limit, all
+                             remained phase-space of each buffer will be 
+                             discarded. Peak performance can be achieved by 
+                             increasing this parameter, as small kernel launch
+                             sizes degrade performance. However, accuracy may 
+                             decrease because remaining particles are removed.
+  seed              [int]  : Initial seed of the curand XORWOW random number
+                             generator.

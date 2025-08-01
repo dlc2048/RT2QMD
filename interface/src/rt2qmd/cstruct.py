@@ -22,7 +22,7 @@ from __future__ import annotations
 # under the License.
 
 """
-Bit field structure of RT2 C++ interface
+Bit field structure of RT2 C++ union flags
 """
 
 __author__    = "Chang-Min Lee"

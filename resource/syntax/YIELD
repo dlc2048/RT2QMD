@@ -1,0 +1,34 @@
+  name              [str]  : The name of tally. This variable must be unique.
+  part              [str]  : Particle namelist of tally filter. Possible
+                             options are followed as below;
+                             
+    1) all          -> Scoring all particles
+    2) photon, g    -> Photon
+    3) neutron, n   -> Neutron
+    4) ion, genion  -> Generic ion (include proton, deuteron ...)    
+      
+  escale            [str]  : Energy binning type of this tally. Possible
+                             options are followed as below;
+                             
+    1) linear       -> The energy bin is linearly uniform.
+    2) log          -> The energy bin is log uniform.
+
+  erange            [float]: Lower and upper bound of energy bin [MeV/u]. 
+                             Upper bound should be larger than lower bound.
+  ne                [int]  : The number of energy bin. This value must be 
+                             positive.
+  dtheta            [float]: Polar angle of the estimator [degree]. 
+                             Initial projectile direction is assume to 
+                             z-axis aligned, and secondary particles are 
+                             regard as azimuhal symmetry. Upper bound should
+                             be larger than lower bound.
+  ascii             [bool] : Write tally data as ASCII if true, as binary 
+                             elsewhere.
+  za                [int]  : A list of ZA filter of this estimator. This 
+                             parameter is used when the 'part' include the 
+                             generic ion. The format of this parameter is 
+                             ZZZAAA. If A = 0, all particles matching the 
+                             specified Z number will be scored. For example
+                             '--za 1000 2000' scores all hydrogen and helium
+                             isotopes.
+                                                          

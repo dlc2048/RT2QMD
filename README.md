@@ -77,6 +77,12 @@ cd RT2QMD/interface
 
 pip3 install .
 
+### Command-line execution
+
+RT2QMD -i [input_file.txt] -o [output_log.txt]
+
+See input_syntax.md for more detail
+
 ## Backgrounds
 
 - This package is based on the relativistic Quantum Molecular Dynamics (QMD) model (https://doi.org/10.1016/0370-1573(91)90094-3)
