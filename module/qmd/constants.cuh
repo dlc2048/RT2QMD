@@ -43,12 +43,12 @@ namespace RT2QMD {
     // Flags
 
 
-    enum PARTICIPANT_FLAGS {
+    typedef enum PARTICIPANT_FLAGS {
         PARTICIPANT_IS_PROTON     = (1 << 0),
         PARTICIPANT_IS_TARGET     = (1 << 1),
         PARTICIPANT_IS_PROJECTILE = (1 << 2),
         PARTICIPANT_IS_IN_CLUSTER = (1 << 3)
-    };
+    } PARTICIPANT_FLAGS;
 
     constexpr int CLUSTER_IDX_SHIFT      = 4;
     constexpr int PARTICIPANT_FLAGS_MASK = (1 << CLUSTER_IDX_SHIFT) - 1;
@@ -63,14 +63,20 @@ namespace RT2QMD {
     } MODEL_FLAGS;
 
 
-    enum MODEL_STAGE {
+    typedef enum MODEL_STAGE {
         MODEL_IDLE,
         MODEL_PREPARE_PROJECTILE,
-        MODEL_SAMPLE_PROJECTILE,
+        MODEL_SAMPLE_PROJECTILE_POSITION,
+        MODEL_SAMPLE_PROJECTILE_MOMENTUM,
+        MODEL_FINALIZE_PROJECTILE,
+        MODEL_FORCING_CONSERVATION_TO_PROJECTILE,
         MODEL_PREPARE_TARGET,
-        MODEL_SAMPLE_TARGET,
+        MODEL_SAMPLE_TARGET_POSITION,
+        MODEL_SAMPLE_TARGET_MOMENTUM,
+        MODEL_FINALIZE_TARGET,
+        MODEL_FORCING_CONSERVATION_TO_TARGET,
         MODEL_PROPAGATE
-    };
+    } MODEL_STAGE;
 
 
     namespace constants {
@@ -137,6 +143,9 @@ namespace RT2QMD {
         constexpr float NUCLEUS_MD2_ISO_2    = 1.5 * 1.5;  //! @brief minimum distance for nn, pp [fm^2]       << G4QMDGroundStateNucleus::dsam2
         constexpr float NUCLEUS_MD2_ISO_0    = 1.0 * 1.0;  //! @brief minimum distance for np [fm^2]           << G4QMDGroundStateNucleus::ddif2
         constexpr float EDIF_TOLERANCE       = 1e-4f;      //! @brief tolerance for energy adjust [GeV]        << G4QMDGroundStateNucleus::epse
+        constexpr float EADJ_FRG             = -0.1f;
+        constexpr float EADJ_RDF             = 0.5f;
+        constexpr float EADJ_EPSE            = 1e-6f;
 
         // QMD propagation
 

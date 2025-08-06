@@ -108,43 +108,95 @@ namespace RT2QMD {
                 if (Buffer::model_cached->za_nuc[0].y != 1)
                     MeanField::prepareNuclei(false);
                 Buffer::model_cached->initial_flags.qmd.phase
-                    = MODEL_STAGE::MODEL_SAMPLE_PROJECTILE;
+                    = MODEL_STAGE::MODEL_SAMPLE_PROJECTILE_POSITION;
                 break;
-            case MODEL_STAGE::MODEL_SAMPLE_PROJECTILE:
+            case MODEL_STAGE::MODEL_SAMPLE_PROJECTILE_POSITION:
                 if (Buffer::model_cached->za_nuc[0].y != 1) {
-                    if (MeanField::sampleNuclei(false))
+                    if (MeanField::sampleNucleonPosition(false)) {
                         Buffer::model_cached->initial_flags.qmd.phase
-                        = MODEL_STAGE::MODEL_PREPARE_TARGET;
+                            = MODEL_STAGE::MODEL_SAMPLE_PROJECTILE_MOMENTUM;
+                        MeanField::cal2BodyQuantities();
+                    }
                     else
                         Buffer::model_cached->initial_flags.qmd.phase
-                        = MODEL_STAGE::MODEL_PREPARE_PROJECTILE;
+                            = MODEL_STAGE::MODEL_PREPARE_PROJECTILE;
                 }
                 else {
-                    MeanField::sampleNucleon(false);
+                    MeanField::sampleNucleon(false);  // A == 1
+                    Buffer::model_cached->initial_flags.qmd.phase
+                        = MODEL_STAGE::MODEL_PREPARE_TARGET;  // skip all steps
+                }
+                break;
+            case MODEL_STAGE::MODEL_SAMPLE_PROJECTILE_MOMENTUM:
+                if (MeanField::sampleNucleonMomentum(false))
+                    Buffer::model_cached->initial_flags.qmd.phase
+                        = MODEL_STAGE::MODEL_FINALIZE_PROJECTILE;
+                else
+                    Buffer::model_cached->initial_flags.qmd.phase
+                        = MODEL_STAGE::MODEL_PREPARE_PROJECTILE;
+                break;
+            case MODEL_STAGE::MODEL_FINALIZE_PROJECTILE:
+                if (MeanField::finalizeNuclei(false))
+                    Buffer::model_cached->initial_flags.qmd.phase
+                        = MODEL_STAGE::MODEL_FORCING_CONSERVATION_TO_PROJECTILE;
+                else
+                    Buffer::model_cached->initial_flags.qmd.phase
+                        = MODEL_STAGE::MODEL_PREPARE_PROJECTILE;
+                break;
+            case MODEL_STAGE::MODEL_FORCING_CONSERVATION_TO_PROJECTILE:
+                if (MeanField::forcingConservationLaw(false))
                     Buffer::model_cached->initial_flags.qmd.phase
                         = MODEL_STAGE::MODEL_PREPARE_TARGET;
-                }
+                else
+                    Buffer::model_cached->initial_flags.qmd.phase
+                        = MODEL_STAGE::MODEL_PREPARE_PROJECTILE;
                 break;
             case MODEL_STAGE::MODEL_PREPARE_TARGET:
                 if (Buffer::model_cached->za_nuc[1].y != 1)
                     MeanField::prepareNuclei(true);
                 Buffer::model_cached->initial_flags.qmd.phase
-                    = MODEL_STAGE::MODEL_SAMPLE_TARGET;
+                    = MODEL_STAGE::MODEL_SAMPLE_TARGET_POSITION;
                 break;
-            case MODEL_STAGE::MODEL_SAMPLE_TARGET:
-                if (Buffer::model_cached->za_nuc[1].y != 1) {
-                    if (MeanField::sampleNuclei(true))
+            case MODEL_STAGE::MODEL_SAMPLE_TARGET_POSITION:
+                if (Buffer::model_cached->za_nuc[0].y != 1) {
+                    if (MeanField::sampleNucleonPosition(true)) {
                         Buffer::model_cached->initial_flags.qmd.phase
-                        = MODEL_STAGE::MODEL_PROPAGATE;
+                            = MODEL_STAGE::MODEL_SAMPLE_TARGET_MOMENTUM;
+                        MeanField::cal2BodyQuantities();
+                    }
                     else
                         Buffer::model_cached->initial_flags.qmd.phase
                         = MODEL_STAGE::MODEL_PREPARE_TARGET;
                 }
                 else {
-                    MeanField::sampleNucleon(true);
+                    MeanField::sampleNucleon(true);  // A == 1
+                    Buffer::model_cached->initial_flags.qmd.phase
+                        = MODEL_STAGE::MODEL_PROPAGATE;  // skip all steps
+                }
+                break;
+            case MODEL_STAGE::MODEL_SAMPLE_TARGET_MOMENTUM:
+                if (MeanField::sampleNucleonMomentum(true))
+                    Buffer::model_cached->initial_flags.qmd.phase
+                    = MODEL_STAGE::MODEL_FINALIZE_TARGET;
+                else
+                    Buffer::model_cached->initial_flags.qmd.phase
+                    = MODEL_STAGE::MODEL_PREPARE_TARGET;
+                break;
+            case MODEL_STAGE::MODEL_FINALIZE_TARGET:
+                if (MeanField::finalizeNuclei(true))
+                    Buffer::model_cached->initial_flags.qmd.phase
+                    = MODEL_STAGE::MODEL_FORCING_CONSERVATION_TO_TARGET;
+                else
+                    Buffer::model_cached->initial_flags.qmd.phase
+                    = MODEL_STAGE::MODEL_PREPARE_TARGET;
+                break;
+            case MODEL_STAGE::MODEL_FORCING_CONSERVATION_TO_TARGET:
+                if (MeanField::forcingConservationLaw(true))
                     Buffer::model_cached->initial_flags.qmd.phase
                         = MODEL_STAGE::MODEL_PROPAGATE;
-                }
+                else
+                    Buffer::model_cached->initial_flags.qmd.phase
+                        = MODEL_STAGE::MODEL_PREPARE_TARGET;
                 break;
             case MODEL_STAGE::MODEL_PROPAGATE:
                 meta_idx = Buffer::model_cached->meta_idx;

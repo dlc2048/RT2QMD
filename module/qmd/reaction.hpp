@@ -45,6 +45,8 @@ namespace RT2QMD {
     constexpr size_t BUFFER_CAP_THRESHOLD_MULTIPLIER   = 10;
     constexpr size_t BUFFER_CAP_MINIMUM_MULTIPLIER     = 2;
 
+    constexpr size_t PULL_FIELD_MAX_COUNT = 50000;
+
 
     struct FlushPhaseSpaceStruct {
         short2 za;
@@ -97,6 +99,19 @@ namespace RT2QMD {
         // buffer priority
         int* _priority_pinned_host;
         int* _priority_pinned_dev;
+        
+        // cluster test (participant)
+        // from here ...
+
+        
+        std::unique_ptr<mcutil::FortranOfunformatted> _cluster_dump;
+        size_t _pull_counter;
+
+
+        void _pullEligibleFields();
+
+
+        // ... to here
 
 
         void _initMetadataBufferSystem();

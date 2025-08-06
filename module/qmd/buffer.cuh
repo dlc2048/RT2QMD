@@ -75,6 +75,7 @@ namespace RT2QMD {
 
     typedef struct QMDModel { 
         int    __pad[2];                  //! @brief memory pad for queue push/pull actions & reduction
+        int    condition_broadcast;       //! @brief condition broadcast for consistent loop break
         int    meta_idx;                  //! @brief metadata idx (used only in shared memory)
         unsigned char participant_idx[MAX_DIMENSION_CLUSTER];
         mcutil::UNION_FLAGS initial_flags;   //! @brief initial flags
@@ -106,8 +107,22 @@ namespace RT2QMD {
         float  ekinal;                    //! @brief total internal kinetic energy of current system [GeV]
         float  vtot;                      //! @brief total internal potential energy of current system [GeV]
         float  excitation;                //! @brief excitation energy of current system [GeV]
+        // field information related to energy level
+        float  ebinal;
+        float  ebini;
+        float  ebin0;
+        float  ebin1;
+        float  dtc;
+        float  edif0;
+        float  cfrc;
+        float  edif;
+        int    ifrc;
+        int    jfrc;
+        // field information related to collision
         int    n_collisions;              //! @brief number of collisions
         int    n_cluster;                 //! @brief number of remnant cluster
+        // field information related to dimension
+        int    offset;                    //! @brief participant address offset
         int    current_field_size;        //! @brief current field size
         int    current_field_size_2;      //! @brief current field size ^ 2
         int    iter_2body;                //! @brief number of two-body mean field iteration 

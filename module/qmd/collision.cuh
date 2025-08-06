@@ -48,7 +48,7 @@ namespace RT2QMD {
         constexpr int BINARY_MAX_TRIAL       = (1 << BINARY_MAX_TRIAL_SHIFT);    // G4QMDCollision (iitry < 4) in line 589
         constexpr int BINARY_MAX_TRIAL_2     = BINARY_MAX_TRIAL << 1;
 
-        constexpr float ENERGY_CONSERVATION_VIOLATION_THRES = 1.e-3f;
+        constexpr float ENERGY_CONSERVATION_VIOLATION_THRES = 1.2e-4f;
 
 
         extern __constant__ bool USING_INCL_NN_SCATTERING;

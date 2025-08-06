@@ -94,8 +94,6 @@ namespace RT2QMD {
         */
         typedef struct NucleiSharedMem {
             float __offset_shared[Buffer::MODEL_CACHING_OFFSET];
-            int   condition_broadcast;   //! @brief condition broadcast for consistent loop break
-            int   offset;    //! @brief participant address offset
             int   blocked;   //! @brief global participant blocking flag
             float radm;      //! @brief Wood-saxon radius parameter
             float rt00;      //! @brief Wood-saxon radius parameter 
@@ -103,10 +101,6 @@ namespace RT2QMD {
             float pfm;       //! @brief momentum sampling coefficient
             float dpot;      //! @brief momentum sampling coefficient
             float ps_cumul;  //! @brief phase-space distance for pauli principle
-            float ebinal;
-            float ebini;
-            float ebin0;
-            float ebin1;
             int   ia;        //! @brief sampling loop index a
             int   ib;        //! @brief sampling loop index b
             float x[CUDA_WARP_SIZE];
@@ -168,10 +162,31 @@ namespace RT2QMD {
         __device__ void sampleNucleon(bool target);
 
 
-        __device__ bool sampleNucleonPosition(bool target, NucleiSharedMem* smem);
+        /**
+        * @brief Sample nucleon positions in nuclei
+        * @param target True if sample target else projectile
+        *
+        * @return true if success, false elsewhere
+        */
+        __device__ bool sampleNucleonPosition(bool target);
 
 
-        __device__ bool sampleNucleonMomentum(bool target, NucleiSharedMem* smem);
+        /**
+        * @brief Sample nucleon momenta in nuclei
+        * @param target True if sample target else projectile
+        *
+        * @return true if success, false elsewhere
+        */
+        __device__ bool sampleNucleonMomentum(bool target);
+
+
+        /**
+        * @brief Kill CM and angular motion, then check the energy diffferences
+        * @param target True if sample target else projectile
+        *
+        * @return true if success, false elsewhere
+        */
+        __device__ bool finalizeNuclei(bool target);
 
 
         /**
@@ -187,9 +202,15 @@ namespace RT2QMD {
 
 
         /**
-        * @brief Forcing energy-momentum conservation law
+        * @brief Adjust nuclei to make excitation energy as zero
         */
-        __device__ void forcingConservationLaw(bool target, int offset);
+        __device__ bool forcingConservationLaw(bool target);
+
+
+        /**
+        * @brief Adjust nucleon phase-space 
+        */
+        __device__ void adjustNucleonPhaseSpace(int offset);
 
 
         /**

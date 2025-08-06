@@ -391,7 +391,7 @@ namespace RT2QMD {
                             temp  = Buffer::MeanField::rha[mi];
                             ccpp  = 
                                 constants::G_SKYRME_C0 + 
-                                constants::G_SKYRME_C3 * (Buffer::MeanField::rh3d[pid] + smem->rh3d[phid]) + 
+                                constants::G_SKYRME_C3 * (Buffer::MeanField::rh3d[j + Buffer::model_cached->offset_1d] + smem->rh3d[phid]) +
                                 constants::G_SYMMETRY  * (ci == cj ? 1.f : -1.f);
                             ccpp *= temp;
                             ccpp += constants::H_COULOMB * Buffer::MeanField::rhc[mi];
@@ -672,7 +672,7 @@ namespace RT2QMD {
             __syncthreads();
             setDimension(a);
             NucleiSharedMem* smem = (NucleiSharedMem*)mcutil::cache_univ;
-            smem->offset = offset;
+            Buffer::model_cached->offset = offset;
 
             // Wood-Saxon parameters
             float radm = constants::WOOD_SAXON_RADIUS_00
@@ -691,12 +691,12 @@ namespace RT2QMD {
                 - ::constants::MASS_PROTON_GEV * (float)z
                 - ::constants::MASS_NEUTRON_GEV * (float)(a - z);
             ebini /= (float)a;  // binding energy per nucleon [GeV]
-            float ebin0 = a == 4 ? ebini - 4.5e-3f : ebini - 1.5e-3f;
-            float ebin1 = a == 4 ? ebini + 4.5e-3f : ebini + 1.5e-3f;
+            float ebin0 = a == 4 ? ebini - 1.5e-3f : ebini - 0.5e-3f;
+            float ebin1 = a == 4 ? ebini + 1.5e-3f : ebini + 0.5e-3f;
 
-            smem->ebini = ebini;
-            smem->ebin0 = ebin0;
-            smem->ebin1 = ebin1;
+            Buffer::model_cached->ebini = ebini;
+            Buffer::model_cached->ebin0 = ebin0;
+            Buffer::model_cached->ebin1 = ebin1;
 
             // set participant target tape & type
             for (int i = 0; i <= a / blockDim.x; ++i) {
@@ -709,10 +709,22 @@ namespace RT2QMD {
                         : INITIAL_FLAG_NEUTRON;
                     mass = flag == INITIAL_FLAG_PROTON ? ::constants::MASS_PROTON_GEV : ::constants::MASS_NEUTRON_GEV;
                     flag |= target ? PARTICIPANT_FLAGS::PARTICIPANT_IS_TARGET : PARTICIPANT_FLAGS::PARTICIPANT_IS_PROJECTILE;
-                    Buffer::model_cached->participant_idx[pp] = (unsigned char)(pp + smem->offset);
-                    pp += smem->offset + Buffer::model_cached->offset_1d;
+                    Buffer::model_cached->participant_idx[pp] = (unsigned char)(pp + Buffer::model_cached->offset);
+                    pp += Buffer::model_cached->offset + Buffer::model_cached->offset_1d;
                     Buffer::Participant::flags[pp] = flag;
                     Buffer::Participant::mass[pp]  = mass;
+                }
+                __syncthreads();
+            }
+
+            // initialize momentum
+            for (int i = 0; i <= a / blockDim.x; ++i) {
+                int pp = i * blockDim.x + threadIdx.x;
+                if (pp < a) {
+                    pp += Buffer::model_cached->offset + Buffer::model_cached->offset_1d;
+                    Buffer::Participant::momentum_x[pp] = 0.f;
+                    Buffer::Participant::momentum_y[pp] = 0.f;
+                    Buffer::Participant::momentum_z[pp] = 0.f;
                 }
                 __syncthreads();
             }
@@ -724,33 +736,21 @@ namespace RT2QMD {
             int a = (int)Buffer::model_cached->za_nuc[target].y;
             NucleiSharedMem* smem = (NucleiSharedMem*)mcutil::cache_univ;
 
-            // initialize momentum
-            for (int i = 0; i <= a / blockDim.x; ++i) {
-                int pp = i * blockDim.x + threadIdx.x;
-                if (pp < a) {
-                    pp += smem->offset + Buffer::model_cached->offset_1d;
-                    Buffer::Participant::momentum_x[pp] = 0.f;
-                    Buffer::Participant::momentum_y[pp] = 0.f;
-                    Buffer::Participant::momentum_z[pp] = 0.f;
-                }
-                __syncthreads();
-            }
-
             // sample loop
-            if (!sampleNucleonPosition(target, smem))
+            if (!sampleNucleonPosition(target))
                 return false;
             __syncthreads();
 
             cal2BodyQuantities();
 
-            if (!sampleNucleonMomentum(target, smem))
+            if (!sampleNucleonMomentum(target))
                 return false;
             __syncthreads();
 
             // post-processing
 
-            killCMMotion(target, smem->offset);
-            killAngularMomentum(target, smem->offset);
+            killCMMotion(target, Buffer::model_cached->offset);
+            killAngularMomentum(target, Buffer::model_cached->offset);
             __syncthreads();
 
             // check binding energy
@@ -758,18 +758,16 @@ namespace RT2QMD {
             calTotalKineticEnergy();
             calTotalPotentialEnergy();
 
-            smem->ebinal = (Buffer::model_cached->vtot + Buffer::model_cached->ekinal) 
+            Buffer::model_cached->ebinal = (Buffer::model_cached->vtot + Buffer::model_cached->ekinal)
                 / (float)Buffer::model_cached->za_nuc[target].y;
 
             __syncthreads();
-            if (smem->ebinal < smem->ebin0 || smem->ebinal > smem->ebin1)  // internal energy violation
+            if (Buffer::model_cached->ebinal < Buffer::model_cached->ebin0 || 
+                Buffer::model_cached->ebinal > Buffer::model_cached->ebin1)  // internal energy violation
                 return false;
 
-            // using INCL off-shell algorithm for energy-momentum conservation
-            // forcingConservationLaw(target, smem->offset);
-
             // initialize nuclei position & momentum
-            setNucleiPhaseSpace(target, smem->offset);
+            setNucleiPhaseSpace(target, Buffer::model_cached->offset);
 
             return true;
         }
@@ -810,10 +808,12 @@ namespace RT2QMD {
         }
 
 
-        __device__ bool sampleNucleonPosition(bool target, NucleiSharedMem* smem) {
+        __device__ bool sampleNucleonPosition(bool target) {
             int thread_idx = threadIdx.x + blockIdx.x * blockDim.x;
             int warp_idx   = threadIdx.x %  CUDA_WARP_SIZE;
             bool exit_condition;
+
+            NucleiSharedMem* smem = (NucleiSharedMem*)mcutil::cache_univ;
 
             Buffer::model_cached->nuc_counter.z = 0u;  // local counter, 2nd
             smem->ia = 0;
@@ -825,17 +825,17 @@ namespace RT2QMD {
                 smem->ib = 0;
 
                 if (!threadIdx.x)
-                    smem->condition_broadcast = smem->ia >= Buffer::model_cached->current_field_size;
+                    Buffer::model_cached->condition_broadcast = smem->ia >= Buffer::model_cached->current_field_size;
                 __syncthreads();
-                exit_condition = smem->condition_broadcast;
+                exit_condition = Buffer::model_cached->condition_broadcast;
                 __syncthreads();
                 if (exit_condition)
                     break;
 
                 if (!threadIdx.x)
-                    smem->condition_broadcast = Buffer::model_cached->nuc_counter.z == UCHAR_MAX;
+                    Buffer::model_cached->condition_broadcast = Buffer::model_cached->nuc_counter.z > 32;
                 __syncthreads();
-                exit_condition = smem->condition_broadcast;
+                exit_condition = Buffer::model_cached->condition_broadcast;
                 __syncthreads();
                 if (exit_condition)
                     return false;
@@ -850,7 +850,7 @@ namespace RT2QMD {
                     sint = sqrtf(fmaxf(0.f, 1.f - cost * cost));
                     sincosf(::constants::FP32_TWO_PI * curand_uniform(&rand_state[thread_idx]), &sinp, &cosp);
 
-                    if (curand_uniform(&rand_state[thread_idx]) * smem->rmax > rwod)
+                    if (curand_uniform(&rand_state[thread_idx]) * smem->rmax <= rwod)
                         it = atomicAdd(&smem->ib, 1);
 
                     if (it < CUDA_WARP_SIZE) {  // maximum candidate = 32
@@ -866,29 +866,28 @@ namespace RT2QMD {
                 __syncthreads(); 
                 for (int m = 0; m < iter_max; ++m) {
                     if (!threadIdx.x)
-                        smem->condition_broadcast = smem->ia >= Buffer::model_cached->current_field_size;
+                        Buffer::model_cached->condition_broadcast = smem->ia >= Buffer::model_cached->current_field_size;
                     __syncthreads();
-                    exit_condition = smem->condition_broadcast;
+                    exit_condition = Buffer::model_cached->condition_broadcast;
                     __syncthreads();
                     if (exit_condition)
                         break;
 
                     // set nucleon type
-                    int flag = smem->ia < Buffer::model_cached->za_nuc[target].x
-                        ? INITIAL_FLAG_PROTON
-                        : INITIAL_FLAG_NEUTRON;
-                    smem->blocked = false;
+                    bool is_proton = smem->ia < Buffer::model_cached->za_nuc[target].x;
+                    smem->blocked  = false;
 
                     __syncthreads();
                     for (int i = 0; i <= smem->ia / blockDim.x; ++i) {
                         int ip = i * blockDim.x + threadIdx.x;
                         if (ip < smem->ia) {
-                            ip += Buffer::model_cached->offset_1d + smem->offset;
-                            float dmin2 = (Buffer::Participant::flags[ip] == flag)
+                            float dmin2 = ((ip < Buffer::model_cached->za_nuc[target].x) == is_proton)
                                 ? constants::NUCLEUS_MD2_ISO_2
                                 : constants::NUCLEUS_MD2_ISO_0;
                             float dd2 = 0.f;
                             float dd;
+
+                            ip += Buffer::model_cached->offset_1d + Buffer::model_cached->offset;
 
                             // x-axis
                             dd = Buffer::Participant::position_x[ip] - smem->x[m];
@@ -908,9 +907,9 @@ namespace RT2QMD {
                         __syncthreads();
 
                         if (!threadIdx.x)
-                            smem->condition_broadcast = smem->blocked;
+                            Buffer::model_cached->condition_broadcast = smem->blocked;
                         __syncthreads();
-                        exit_condition = smem->condition_broadcast;
+                        exit_condition = Buffer::model_cached->condition_broadcast;
                         __syncthreads();
                         if (exit_condition)
                             break;
@@ -918,7 +917,7 @@ namespace RT2QMD {
 
                     if (!threadIdx.x) {
                         if (!smem->blocked) {
-                            int ip = Buffer::model_cached->offset_1d + smem->offset + smem->ia;
+                            int ip = Buffer::model_cached->offset_1d + Buffer::model_cached->offset + smem->ia;
                             Buffer::Participant::position_x[ip] = smem->x[m];
                             Buffer::Participant::position_y[ip] = smem->y[m];
                             Buffer::Participant::position_z[ip] = smem->z[m];
@@ -934,10 +933,12 @@ namespace RT2QMD {
         }
 
 
-        __device__ bool sampleNucleonMomentum(bool target, NucleiSharedMem* smem) {
+        __device__ bool sampleNucleonMomentum(bool target) {
             int thread_idx = threadIdx.x + blockIdx.x * blockDim.x;
             int warp_idx   = threadIdx.x % CUDA_WARP_SIZE;
             bool exit_condition;
+
+            NucleiSharedMem* smem = (NucleiSharedMem*)mcutil::cache_univ;
 
             bool prepare_sampling_coeff = true;
             Buffer::model_cached->nuc_counter.z = 0u;  // local counter, 2nd
@@ -959,23 +960,23 @@ namespace RT2QMD {
                 smem->ib = 0;
 
                 if (!threadIdx.x)
-                    smem->condition_broadcast = smem->ia >= Buffer::model_cached->current_field_size;
+                    Buffer::model_cached->condition_broadcast = smem->ia >= Buffer::model_cached->current_field_size;
                 __syncthreads();
-                exit_condition = smem->condition_broadcast;
+                exit_condition = Buffer::model_cached->condition_broadcast;
                 __syncthreads();
                 if (exit_condition)
                     break;
 
                 if (!threadIdx.x)
-                    smem->condition_broadcast = Buffer::model_cached->nuc_counter.z == UCHAR_MAX;
+                    Buffer::model_cached->condition_broadcast = Buffer::model_cached->nuc_counter.z > 32;
                 __syncthreads();
-                exit_condition = smem->condition_broadcast;
+                exit_condition = Buffer::model_cached->condition_broadcast;
                 __syncthreads();
                 if (exit_condition)
                     return false;
 
                 if (prepare_sampling_coeff) {
-                    int ci = smem->ia + Buffer::model_cached->offset_1d + smem->offset;
+                    int ci = smem->ia + Buffer::model_cached->offset_1d + Buffer::model_cached->offset;
                     int cj;
                     ci     = Buffer::Participant::flags[ci] 
                         & PARTICIPANT_FLAGS::PARTICIPANT_IS_PROTON;
@@ -994,7 +995,7 @@ namespace RT2QMD {
                             rho_a += temp;
                             temp   = ci == cj ? temp : -temp;
                             rho_s += temp;
-                            rho_c += Buffer::MeanField::rhc[mi];
+                            rho_c += Buffer::MeanField::rhe[mi];
                         }
                         __syncthreads();
                     }
@@ -1004,8 +1005,8 @@ namespace RT2QMD {
                     float rhol = constants::GS_CD * (rho_a + 1.f);
                     float pfm  = ::constants::FP32_HBARC
                         * powf(::constants::THREE_OVER_TWO * ::constants::FP32_PI_SQ * rhol, ::constants::ONE_OVER_THREE);
-                    pfm = smem->ia > 10 && smem->ebini > -5.5e-3f
-                        ? pfm * (1.f + 0.2f * sqrtf(fabsf(8e-3f + smem->ebini) / 8e-3f))
+                    pfm = Buffer::model_cached->za_nuc[target].y > 10 && Buffer::model_cached->ebini > -5.5e-3f
+                        ? pfm * (1.f + 0.2f * sqrtf(fabsf(8e-3f + Buffer::model_cached->ebini) / 8e-3f))
                         : pfm;
                     smem->pfm  = pfm;
                     smem->dpot =
@@ -1018,10 +1019,8 @@ namespace RT2QMD {
                 __syncthreads();
 
                 // set nucleon type
-                int   flag  = smem->ia < Buffer::model_cached->za_nuc[target].x
-                    ? INITIAL_FLAG_PROTON
-                    : INITIAL_FLAG_NEUTRON;
-                float mass = flag == INITIAL_FLAG_PROTON
+                bool is_proton = smem->ia < Buffer::model_cached->za_nuc[target].x;
+                float mass     = is_proton
                     ? ::constants::MASS_PROTON_GEV
                     : ::constants::MASS_NEUTRON_GEV;
 
@@ -1056,7 +1055,7 @@ namespace RT2QMD {
                 }
                 __syncthreads();
                 // pauli principle
-                for (int m = 0; m < iter_max; ++m) {
+                for (int m = 0; m < iter_max; ++m) {  // m -> candidate for ia (new)
                     smem->blocked  = false;
                     smem->ps_cumul = 0.f;
                     __syncthreads();
@@ -1065,8 +1064,10 @@ namespace RT2QMD {
                         int   mi = m * Buffer::model_cached->current_field_size + ip + Buffer::model_cached->offset_2d;
                         float ps = 0.f;
                         float temp;
-                        if (ip < smem->ia) {
-                            ip += Buffer::model_cached->offset_1d + smem->offset;
+                        
+                        if (ip < smem->ia) {  // ip -> deposited nucleons
+                            bool opp_is_proton = ip < Buffer::model_cached->za_nuc[target].x;
+                            ip += Buffer::model_cached->offset_1d + Buffer::model_cached->offset;
                             float expa = -Buffer::MeanField::rr2[mi] * constants::PAULI_CPW;
                             // momentum space distance
                             temp = Buffer::Participant::momentum_x[ip] - smem->x[m];
@@ -1077,7 +1078,7 @@ namespace RT2QMD {
                             ps += temp * temp;
                             expa = expa - ps * constants::PAULI_CPH;
                             ps = expa <= constants::PAULI_EPSX ? 0.f : expf(expa);
-                            if (Buffer::Participant::flags[ip] != flag)
+                            if (is_proton != opp_is_proton)
                                 ps = 0.f;
                             ip = i * blockDim.x + threadIdx.x;
                             if (ps * constants::PAULI_CPC > 0.2f)
@@ -1088,25 +1089,23 @@ namespace RT2QMD {
                         __syncthreads();
 
                         if (!threadIdx.x)
-                            smem->condition_broadcast = smem->blocked;
+                            Buffer::model_cached->condition_broadcast = smem->blocked;
                         __syncthreads();
-                        exit_condition = smem->condition_broadcast;
+                        exit_condition = Buffer::model_cached->condition_broadcast;
                         __syncthreads();
                         if (exit_condition)
                             break;
 
                         ps = rsum32_(ps);
-                        if (!warp_idx)
-                            atomicAdd(&smem->ps_cumul, ps);
-                        __syncthreads();
-
                         if (!threadIdx.x) {
+                            atomicAdd(&smem->ps_cumul, ps);
                             if (smem->ps_cumul * constants::PAULI_CPC > 0.3f)
                                 smem->blocked = true;
-                            smem->condition_broadcast = smem->blocked;
+                            Buffer::model_cached->condition_broadcast = smem->blocked;
                         } 
+                        
                         __syncthreads();
-                        exit_condition = smem->condition_broadcast;
+                        exit_condition = Buffer::model_cached->condition_broadcast;
                         __syncthreads();
                         if (exit_condition)
                             break;
@@ -1115,15 +1114,15 @@ namespace RT2QMD {
                     __syncthreads();
 
                     if (!threadIdx.x)
-                        smem->condition_broadcast = smem->blocked;
+                        Buffer::model_cached->condition_broadcast = smem->blocked;
                     __syncthreads();
-                    exit_condition = smem->condition_broadcast;
+                    exit_condition = Buffer::model_cached->condition_broadcast;
                     __syncthreads();
                     if (exit_condition)
                         continue;
 
                     if (!threadIdx.x)
-                        smem->phg[m] = smem->ps_cumul;
+                        smem->phg[smem->ia] = smem->ps_cumul;
                     __syncthreads();
                     
                     exit_condition = smem->ia == Buffer::model_cached->current_field_size - 1;
@@ -1135,7 +1134,8 @@ namespace RT2QMD {
                             float ps = 0.f;
                             float temp;
                             if (ip < smem->ia) {
-                                ip += Buffer::model_cached->offset_1d + smem->offset;
+                                bool opp_is_proton = ip < Buffer::model_cached->za_nuc[target].x;
+                                ip += Buffer::model_cached->offset_1d + Buffer::model_cached->offset;
                                 float expa = -Buffer::MeanField::rr2[mi] * constants::PAULI_CPW;
                                 // momentum space distance
                                 temp = Buffer::Participant::momentum_x[ip] - smem->x[m];
@@ -1146,7 +1146,7 @@ namespace RT2QMD {
                                 ps  += temp * temp;
                                 expa = expa - ps * constants::PAULI_CPH;
                                 ps   = expf(expa);
-                                if (Buffer::Participant::flags[ip] != flag)
+                                if (is_proton != opp_is_proton)
                                     ps = 0.f;
                                 ip = i * blockDim.x + threadIdx.x;
                                 smem->phg[ip] += ps;
@@ -1155,7 +1155,7 @@ namespace RT2QMD {
                         }
                     }
                     if (!threadIdx.x) {
-                        int ip = Buffer::model_cached->offset_1d + smem->offset + smem->ia;
+                        int ip = Buffer::model_cached->offset_1d + Buffer::model_cached->offset + smem->ia;
 
                         assertNAN(smem->x[m]);
                         assertNAN(smem->y[m]);
@@ -1173,6 +1173,30 @@ namespace RT2QMD {
             }
 
             return true;
+        }
+
+
+        __device__ bool finalizeNuclei(bool target) {
+            NucleiSharedMem* smem = (NucleiSharedMem*)mcutil::cache_univ;
+            __syncthreads();
+            killCMMotion(target, Buffer::model_cached->offset);
+            killAngularMomentum(target, Buffer::model_cached->offset);
+            __syncthreads();
+
+            // check binding energy
+            cal2BodyQuantities();
+            calTotalKineticEnergy();
+            calTotalPotentialEnergy();
+            __syncthreads();
+
+            float ebinal = (Buffer::model_cached->vtot + Buffer::model_cached->ekinal)
+                / (float)Buffer::model_cached->za_nuc[target].y;
+
+            if (!threadIdx.x)
+                Buffer::model_cached->ebinal = ebinal;
+            __syncthreads();
+
+            return ebinal >= Buffer::model_cached->ebin0 && ebinal <= Buffer::model_cached->ebin1;  // check internal energy violation
         }
 
 
@@ -1450,16 +1474,114 @@ namespace RT2QMD {
         }
 
 
-        __device__ void forcingConservationLaw(bool target, int offset) {
-            float  m1 = Buffer::model_cached->mass[target] - (Buffer::model_cached->vtot + Buffer::model_cached->ekinal);
-            short2 za = Buffer::model_cached->za_nuc[target];
-            float  m2 = ::constants::MASS_PROTON_GEV * (float)za.x + ::constants::MASS_NEUTRON_GEV * (float)(za.y - za.x);
-            float  mr = m1 / m2;
+        __device__ bool forcingConservationLaw(bool target) {
+            bool exit_condition;
+
+            if (!threadIdx.x) {
+                Buffer::model_cached->dtc   = 1.f;
+                Buffer::model_cached->edif0 = Buffer::model_cached->ebinal - Buffer::model_cached->ebini;
+                Buffer::model_cached->cfrc  = Buffer::model_cached->edif0 > 0
+                    ? +constants::EADJ_FRG 
+                    : -constants::EADJ_FRG;
+                Buffer::model_cached->ifrc  = 1;
+
+                Buffer::model_cached->nuc_counter.z = 0u;  // local counter
+            }
+            __syncthreads();
+            
+            while (true) {
+                if (!threadIdx.x) {  // thread 0 -> next gradient
+                    Buffer::model_cached->nuc_counter.z++;
+                    Buffer::model_cached->edif = Buffer::model_cached->ebinal - Buffer::model_cached->ebini;
+                    Buffer::model_cached->jfrc = Buffer::model_cached->edif < 0.f ? 1 : -1;
+
+                    if (Buffer::model_cached->jfrc != Buffer::model_cached->ifrc) {
+                        Buffer::model_cached->cfrc *= -0.5f;
+                        Buffer::model_cached->dtc  *= 0.5f;
+                    }
+                    else if (fabsf(Buffer::model_cached->edif0) < fabsf(Buffer::model_cached->edif)) {
+                        Buffer::model_cached->cfrc *= -0.5f;
+                        Buffer::model_cached->dtc  *= 0.5f;
+                    }
+
+                    Buffer::model_cached->ifrc  = Buffer::model_cached->jfrc;
+                    Buffer::model_cached->edif0 = Buffer::model_cached->edif;
+
+                    Buffer::model_cached->condition_broadcast = fabsf(Buffer::model_cached->edif) < constants::EADJ_EPSE;
+                }
+
+                // exit condition 1 : ground state
+                __syncthreads();  
+                exit_condition = Buffer::model_cached->condition_broadcast;
+                __syncthreads();
+                if (exit_condition)
+                    break;
+                
+                // exit condition 2 : exceeded trials
+                if (!threadIdx.x)
+                    Buffer::model_cached->condition_broadcast = Buffer::model_cached->nuc_counter.z > 32;
+                __syncthreads();
+                exit_condition = Buffer::model_cached->condition_broadcast;
+                __syncthreads();
+                if (exit_condition)
+                    return false;
+
+                calGraduate();
+
+                // update phase-space
+                adjustNucleonPhaseSpace(Buffer::model_cached->offset);
+
+                // check binding energy
+                cal2BodyQuantities();
+                calTotalKineticEnergy();
+                calTotalPotentialEnergy();
+                __syncthreads();
+
+                float ebinal = (Buffer::model_cached->vtot + Buffer::model_cached->ekinal)
+                    / (float)Buffer::model_cached->za_nuc[target].y;
+
+                if (!threadIdx.x)
+                    Buffer::model_cached->ebinal = ebinal;
+                __syncthreads();
+
+                //if (!threadIdx.x && !blockIdx.x)
+                //    printf("%d %d %f %f \n", target, Buffer::model_cached->nuc_counter.z, Buffer::model_cached->ebini, ebinal);
+            }
+            
+            setNucleiPhaseSpace(target, Buffer::model_cached->offset);
+            return true;
+        }
+
+
+        __device__ void adjustNucleonPhaseSpace(int offset) {
             for (int ib = 0; ib <= Buffer::model_cached->current_field_size / blockDim.x; ++ib) {
-                int i = ib * blockDim.x + threadIdx.x;
+                int   i = ib * blockDim.x + threadIdx.x;
+                int   j;
+                float ffr, ffp;
+
+                float dtc  = Buffer::model_cached->dtc;
+                float cfrc = Buffer::model_cached->cfrc;
+
                 if (i < Buffer::model_cached->current_field_size) {
-                    i    += Buffer::model_cached->offset_1d + offset;
-                    Buffer::Participant::mass[i] *= mr;
+                    i += Buffer::model_cached->offset_1d;
+                    j  = i + offset;
+                    // x
+                    ffp = Buffer::MeanField::ffpx[i];
+                    ffr = Buffer::MeanField::ffrx[i];
+                    Buffer::Participant::position_x[j] += dtc * (ffr - cfrc * ffp);
+                    Buffer::Participant::momentum_x[j] += dtc * (ffp + cfrc * ffr);
+
+                    // y
+                    ffp = Buffer::MeanField::ffpy[i];
+                    ffr = Buffer::MeanField::ffry[i];
+                    Buffer::Participant::position_y[j] += dtc * (ffr - cfrc * ffp);
+                    Buffer::Participant::momentum_y[j] += dtc * (ffp + cfrc * ffr);
+
+                    // z
+                    ffp = Buffer::MeanField::ffpz[i];
+                    ffr = Buffer::MeanField::ffrz[i];
+                    Buffer::Participant::position_z[j] += dtc * (ffr - cfrc * ffp);
+                    Buffer::Participant::momentum_z[j] += dtc * (ffp + cfrc * ffr);
                 }
                 __syncthreads();
             }
@@ -1800,6 +1922,8 @@ namespace RT2QMD {
                         calExcitationEnergyAndMomentum();
                         __syncthreads();
                         // write to shared memory
+                        // if (!threadIdx.x && !blockIdx.x)
+                        // printf("%d %d %d %f \n", ic, smem->cluster_z[ic], smem->cluster_a[ic], smem->cluster_excit[ic]);
                         smem->cluster_mass[ic]  = Buffer::model_cached->mass_system;
                         smem->cluster_excit[ic] = Buffer::model_cached->excitation;
                         smem->cluster_u[ic]     = Buffer::model_cached->momentum_system[0];
@@ -1810,18 +1934,18 @@ namespace RT2QMD {
                         if (!threadIdx.x) {
                             if (smem->cluster_z[ic] == Buffer::model_cached->za_nuc[0].x &&
                                 smem->cluster_a[ic] == Buffer::model_cached->za_nuc[0].y &&
-                                smem->cluster_excit[ic] < 1.e-3f && !smem->elastic_count[0]) {
+                                !smem->elastic_count[0]) {
                                 smem->elastic_count[0] = 1;
                             }
                             else if (smem->cluster_z[ic] == Buffer::model_cached->za_nuc[1].x &&
                                      smem->cluster_a[ic] == Buffer::model_cached->za_nuc[1].y &&
-                                     smem->cluster_excit[ic] < 1.e-3f && !smem->elastic_count[1]) {
+                                     !smem->elastic_count[1]) {
                                      smem->elastic_count[1] = 1;
                             }
                         }
                         __syncthreads();
                     }
-                    if (smem->elastic_count[0] && smem->elastic_count[1])  // elastic
+                    if (smem->elastic_count[0] && smem->elastic_count[1] && !Buffer::model_cached->n_collisions)  // elastic
                         return false;
                 }
                 __syncthreads();
@@ -2019,40 +2143,40 @@ namespace RT2QMD {
             0, 0, 0, 0, 0, 0
         };
         __device__ float __rx[__SYSTEM_TEST_DIMENSION] = {
-           2.53038 , -9.52212,   -11.1372,  0.219025,  2.82231, -16.9309,
-           -8.90082,  12.6091,     -12.21,   2.52974,  2.94799,  3.40433,
-           -1.93745, -1.15723,  0.0418667,   5.45261, -4.38807,  31.0403,
-           28.5499 , -14.5001,   -2.66397,  -1.93346, -1.37424, -3.57328
+            -1.98524,    -1.91334,    -0.820065,   -2.97985 ,   -3.22144,    -2.30599,
+            -2.96504,    -2.29629,    -4.33615 ,   -1.27956 ,   -1.92462,    -3.22246,
+            1.62377 ,    1.68683 ,     3.32409 ,    1.12105 ,    4.29198,     1.75454,
+            2.23116 ,    2.98777 ,     3.91328 ,    0.960796,    2.74402,     2.62454
         };
         __device__ float __ry[__SYSTEM_TEST_DIMENSION] = {
-           -2.52852,	14.7567 ,	-0.399907,	24.7643 ,	-1.31646,	10.5735 ,
-            -29.2832,	-8.59097,	8.42143 ,	2.82926 ,	-1.27115,	-1.50691,
-            -1.96031,	0.537173,	1.62217 ,	0.187909,	-1.4294	,   -1.48736,
-            0.597406,	-27.2868,	-0.825821,	0.132811,	-5.22105,	19.2131
+           -0.200787 ,    1.52382,     1.75647 ,    0.786124,    -0.899925,   -1.57078 ,
+            1.80299  ,   -1.43579,    -1.24464 ,    0.173322,     0.283042,   -0.974308,
+            0.472283 ,   -1.03056,    -0.493642,   -1.3177  ,     0.411882,    1.54386 ,
+            0.195139 ,    1.36682,     0.899496,    0.664835,    -1.80904 ,   -0.895495
         };
         __device__ float __rz[__SYSTEM_TEST_DIMENSION] = {
-            -29.112,	-8.64642,	-10.2827,	-28.0772,	-27.8385,	-29.5485,
-            -23.659,	11.6198 ,	-41.1155,	-29.9457,	-29.8894,	-29.1576,
-            32.5782,	31.4271 ,	31.808  ,	16.9297 ,	31.34   ,	19.1916 ,
-            14.3593,	-17.9297,	29.2733 ,	33.3002 ,	31.1115 ,	27.3467
+            4.74696 ,     4.26156,     3.41295,     5.6671 ,     3.32437,     5.98132,
+            5.22276 ,     4.48783,     4.4728 ,     5.21732,     3.31465,     5.21975,
+            -3.8469 ,    -2.87205,    -4.71484,    -5.14864,    -3.48896,    -4.90615,
+            -3.33724,    -5.97976,    -4.92249,    -6.17678,    -4.85863,    -5.07696
         };
         __device__ float __px[__SYSTEM_TEST_DIMENSION] = {
-            0.178502 ,	-0.100223 ,	-0.135871,	0.000617116,	0.0185447 ,	-0.194152,
-            -0.11589 ,	0.12234   ,	-0.145786,	0.0597584  ,	-0.0830832,	0.0825837,
-            0.0191552,	-0.0626398,	-0.013422,	0.0654593  ,	-0.0843839,	0.348197 ,
-            0.341473 ,	-0.16333  ,	0.010514 ,	0.00853691 ,	-0.0872362,	-0.055474
+            0.00631942,   0.0634713 ,   0.0234787,   -0.0629798 ,  0.00408035,   1.76E-05  ,
+            0.0214417 ,   0.0758955 ,  -0.0444026,   -0.150157  ,  0.0622998 ,  -0.00106864,
+            0.0896532 ,  -0.0742939 ,   0.0457343,   -0.00266003,  0.0557753 ,  -0.0758651 ,
+            0.0600493 ,   0.00114591,   0.0337269,   -0.0836346 , -0.0305961 ,  -0.0177727
         };
         __device__ float __py[__SYSTEM_TEST_DIMENSION] = {
-            -0.00371677,	0.180591 ,	-0.00667258,	0.269705  ,	-0.00553188,	0.140325  ,
-            -0.332989  ,	-0.104186,	0.0993201  ,	-0.0150453,	-0.00719173,	-0.0252185,
-            -0.00857555,	0.0137058,	-0.0728963 ,	0.00372519,	0.0648226  ,	-0.0226284,
-            0.0338322  ,	-0.337268,	-0.0916963 ,	0.018588  ,	0.00110179 ,	0.208724
+            0.101838  ,  -0.0488751 ,  0.0739428,   -0.0188565,   0.0470832 ,   0.0309679,
+            -0.074474 ,   0.00675886,  0.0507543,   -0.069778 ,   0.00553081,  -0.105027 ,
+            -0.0586822,   0.0267235 ,  0.0806152,   -0.052967 ,  -0.0969983 ,  -0.135114 ,
+            0.034035  ,  -0.0528342 ,  0.0956546,    0.0604633,   0.127277  ,  -0.0278493
         };
         __device__ float __pz[__SYSTEM_TEST_DIMENSION] = {
-            -0.292523,	-0.0936555,	-0.107785,	-0.310559,	-0.3167  ,	-0.381225,
-            -0.27309 ,	0.13309   ,	-0.496655,	-0.345646,	-0.344711,	-0.339696,
-            0.361957 ,	0.433021  ,	0.365314 ,	0.206358 ,	0.303008 ,	0.222506 ,
-            0.201168 ,	-0.22139  ,	0.354203 ,	0.276705 ,	0.350121 ,	0.317477
+            -0.204227,   -0.497483,   -0.388736,   -0.396508,   -0.358078,   -0.499644,
+            -0.348246,   -0.304225,   -0.190018,   -0.346926,   -0.477583,   -0.466718,
+            0.411787 ,    0.391206,    0.309637,    0.312706,    0.37542 ,    0.249735,
+            0.44372  ,    0.479352,    0.353083,    0.278547,    0.342303,    0.530666
         };
 
 

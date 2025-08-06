@@ -48,6 +48,87 @@
 namespace RT2QMD {
 
 
+    void DeviceMemoryHandler::_pullEligibleFields() {
+        if (this->_cluster_dump == nullptr) {
+            this->_pull_counter = 0u;
+            this->_cluster_dump = std::make_unique<mcutil::FortranOfunformatted>("initial_fields.bin");
+            this->_cluster_dump->write(std::vector<int>{(int)this->_max_field_dimension});
+        }
+
+        if (this->_pull_counter > PULL_FIELD_MAX_COUNT)
+            return;
+
+        std::vector<int> host_current_metadata(this->_block);
+        CUDA_CHECK(cudaMemcpy(&host_current_metadata[0], this->_dev_current_metadata, 
+            sizeof(int) * this->_block, cudaMemcpyDeviceToHost));
+        std::vector<QMDModel> host_qmd_model(this->_n_metadata);
+        CUDA_CHECK(cudaMemcpy(&host_qmd_model[0], this->_dev_qmd_model_ptr,
+            sizeof(QMDModel) * this->_n_metadata, cudaMemcpyDeviceToHost));
+
+        // get participants
+        size_t soa_size_1d = this->_n_metadata * this->_max_field_dimension;
+
+        std::vector<int>   flags(soa_size_1d);
+        std::vector<float> pos_x(soa_size_1d);
+        std::vector<float> pos_y(soa_size_1d);
+        std::vector<float> pos_z(soa_size_1d);
+        std::vector<float> mom_x(soa_size_1d);
+        std::vector<float> mom_y(soa_size_1d);
+        std::vector<float> mom_z(soa_size_1d);
+
+        CUDA_CHECK(cudaMemcpy(&flags[0], this->_soa_list_p1[0], 
+            soa_size_1d * sizeof(float), cudaMemcpyDeviceToHost));
+
+        CUDA_CHECK(cudaMemcpy(&pos_x[0], this->_soa_list_p1[2],
+            soa_size_1d * sizeof(float), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(&pos_y[0], this->_soa_list_p1[3],
+            soa_size_1d * sizeof(float), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(&pos_z[0], this->_soa_list_p1[4],
+            soa_size_1d * sizeof(float), cudaMemcpyDeviceToHost));
+
+        CUDA_CHECK(cudaMemcpy(&mom_x[0], this->_soa_list_p1[5],
+            soa_size_1d * sizeof(float), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(&mom_y[0], this->_soa_list_p1[6],
+            soa_size_1d * sizeof(float), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(&mom_z[0], this->_soa_list_p1[7],
+            soa_size_1d * sizeof(float), cudaMemcpyDeviceToHost));
+
+        // get cluster
+        for (size_t i = 0; i < this->_block; ++i) {
+            QMDModel& model_current = host_qmd_model[host_current_metadata[i]];
+            int offset_1d = model_current.offset_1d;
+            std::vector<Buffer::ParticleDumpBuffer> participants(this->_max_field_dimension);
+            for (size_t j = 0; j < this->_max_field_dimension; ++j) {
+                bool target = j >= model_current.za_nuc[0].y;
+                participants[j].flags =  flags[offset_1d + j];
+                participants[j].m     =  flags[offset_1d + j] & PARTICIPANT_IS_PROTON 
+                    ? ::constants::MASS_PROTON_GEV 
+                    : ::constants::MASS_NEUTRON_GEV;
+                /*
+                participants[j].x     =  pos_x[offset_1d + j] - model_current.cc_rx[target];
+                participants[j].y     =  pos_y[offset_1d + j];
+                participants[j].z     = (pos_z[offset_1d + j] - model_current.cc_rz[target]) * model_current.cc_gamma[target];
+                participants[j].px    =  mom_x[offset_1d + j] - model_current.cc_px[target];
+                participants[j].py    =  mom_y[offset_1d + j];
+                participants[j].pz    = (mom_z[offset_1d + j] - model_current.cc_pz[target]) / model_current.cc_gamma[target];
+                */
+                participants[j].x  = pos_x[offset_1d + j];
+                participants[j].y  = pos_y[offset_1d + j];
+                participants[j].z  = pos_z[offset_1d + j];
+                participants[j].px = mom_x[offset_1d + j];
+                participants[j].py = mom_y[offset_1d + j];
+                participants[j].pz = mom_z[offset_1d + j];
+
+            }
+            this->_cluster_dump->write(participants);
+        }
+
+        this->_pull_counter += this->_block;
+
+        return;
+    }
+
+
     void DeviceMemoryHandler::_initMetadataBufferSystem() {
         mclog::debug("Initialize QMD internal metadata queue ...");
 
@@ -475,6 +556,9 @@ namespace RT2QMD {
             this->_measureTime("__host__fieldDispatcher", this->_block, this->_thread);
             __host__pullEligibleField(this->_block, this->_thread);            // pull eligible field from idx queue
             this->_measureTime("__host__pullEligibleField", this->_block, this->_thread);
+            
+            // pull 
+            // this->_pullEligibleFields();
 #else
             __host__prepareModel(this->_block, this->_thread, buffer_idx);
             this->_measureTime("__host__prepareModel", this->_block, this->_thread);
@@ -485,6 +569,9 @@ namespace RT2QMD {
 #endif
             __host__propagate(this->_block, this->_thread);                    // do propagate
             __host__finalize(this->_block, this->_thread, buffer_idx);         // finalize
+
+            // pull 
+            // this->_pullEligibleFields();
 
             // __host__deviceResetModelBuffer(this->_block, this->_thread, false);
 
