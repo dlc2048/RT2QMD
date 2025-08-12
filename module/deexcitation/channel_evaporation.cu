@@ -385,12 +385,12 @@ namespace deexcitation {
                     float y    = computeProbabilityShared(k);
 
                     // maximum y
-                    smem->redux_r2[lane_dim * i + lane_idx] = rmax32_(y);
+                    smem->redux_r2[lane_dim * (i % smem->int_iter_2nd) + lane_idx] = rmax32_(y);
 
                     // trapezoidal
                     if ((i == 0 && !threadIdx.x) || (i == smem->int_iter - 1 && threadIdx.x == blockDim.x - 1))
                         y = y * 0.5f;
-                    smem->redux_r1[lane_dim * i + lane_idx] = rsum32_(y);
+                    smem->redux_r1[lane_dim * (i % smem->int_iter_2nd) + lane_idx] = rsum32_(y);
 
                     __syncthreads();
                 }

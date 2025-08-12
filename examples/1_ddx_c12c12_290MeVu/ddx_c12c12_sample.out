@@ -1,4 +1,4 @@
- [2025-07-29 16:55:34] 
+ [2025-08-06 14:09:42] 
  [INFO] Read input file stream 'ddx_c12c12.inp'
  [LINE]      2 CUDA_SETTINGS --gpu 3 --block_per_sm 96 --buffer_ratio 0.6
  [WARNING] Field 'block_decay_limit' is not found. Use default value (1)
@@ -36,56 +36,56 @@
  [LINE]     33 YIELD --name n90 --part neutron --ascii true --erange 1e0 1e3 --n
         e 300 --escale log --dtheta 88.51531933018718 91.48468066981282 --za 0
  [WARNING] Field 'overwrite' is not found. Use default value (1)
- [2025-07-29 16:55:35] 
+ [2025-08-06 14:09:42] 
  [INFO] Close input file stream
- [2025-07-29 16:55:35] 
+ [2025-08-06 14:09:44] 
  [INFO] All data are prepared!
- [2025-07-29 16:55:35] 
+ [2025-08-06 14:09:44] 
  [INFO] Module tester target intraction: Quantum Molecular Dynamics
  [INFO] Module tester mode: Full
  [INFO] Start kernel iteration
  [INFO] 0st iteration
- [2025-07-29 16:56:29] 
+ [2025-08-06 14:11:01] 
  [INFO] NPS 5000000
- [2025-07-29 16:57:11] 
+ [2025-08-06 14:12:01] 
  [INFO] NPS 10000000
- [2025-07-29 16:57:52] 
+ [2025-08-06 14:13:00] 
  [INFO] NPS 15000000
- [2025-07-29 16:58:34] 
+ [2025-08-06 14:13:59] 
  [INFO] NPS 20000000
- [2025-07-29 16:59:15] 
+ [2025-08-06 14:14:58] 
  [INFO] NPS 25000000
- [2025-07-29 17:00:11] 
+ [2025-08-06 14:16:17] 
  [INFO] NPS 30000000
- [2025-07-29 17:00:52] 
+ [2025-08-06 14:17:16] 
  [INFO] NPS 35000000
- [2025-07-29 17:01:34] 
+ [2025-08-06 14:18:15] 
  [INFO] NPS 40000000
- [2025-07-29 17:02:16] 
+ [2025-08-06 14:19:14] 
  [INFO] NPS 45000000
- [2025-07-29 17:02:57] 
+ [2025-08-06 14:20:13] 
  [INFO] NPS 50000000
- [2025-07-29 17:03:39] 
+ [2025-08-06 14:21:12] 
  [INFO] NPS 55000000
- [2025-07-29 17:04:34] 
+ [2025-08-06 14:22:31] 
  [INFO] NPS 60000000
- [2025-07-29 17:05:16] 
+ [2025-08-06 14:23:30] 
  [INFO] NPS 65000000
- [2025-07-29 17:05:58] 
+ [2025-08-06 14:24:29] 
  [INFO] NPS 70000000
- [2025-07-29 17:06:39] 
+ [2025-08-06 14:25:28] 
  [INFO] NPS 75000000
- [2025-07-29 17:07:21] 
+ [2025-08-06 14:26:27] 
  [INFO] NPS 80000000
- [2025-07-29 17:08:16] 
+ [2025-08-06 14:27:46] 
  [INFO] NPS 85000000
- [2025-07-29 17:08:58] 
+ [2025-08-06 14:28:45] 
  [INFO] NPS 90000000
- [2025-07-29 17:09:40] 
+ [2025-08-06 14:29:44] 
  [INFO] NPS 95000000
- [2025-07-29 17:10:21] 
+ [2025-08-06 14:30:44] 
  [INFO] NPS 100000000
- [2025-07-29 17:10:21] 
+ [2025-08-06 14:30:44] 
  [INFO] End of main Monte Carlo stage
  [INFO] Start the residual stage
  [INFO] Block is set to 2457
@@ -100,33 +100,33 @@
   Total weight                           100663296
  [INFO] *** Kernel Execution Histories ***
   Electron Transport                             0 (Banks)
-  Photon Transport                       296346368 (Banks)
+  Photon Transport                       280544640 (Banks)
   Positron Transport                             0 (Banks)
   Low Energy Neutron Transport                   0 (Banks)
-  Generic Neutron Transport              476430943 (Banks)
-  Generic Ion Transport                  782036052 (Banks)
+  Generic Neutron Transport              458487872 (Banks)
+  Generic Ion Transport                  769980352 (Banks)
   Atomic Relaxation                              0 (Banks)
   Generic ion delta-ray                          0 (Banks)
   Ion-Nuclear Reaction                           0 (Banks)
   Boltzmann Master Equation                      0 (Banks)
-  Frag Secondary Particles              1258467200 (Banks)
-  Nuclear De-excitation                  493448064 (Banks)
-  Photon Evaporation                     296346496 (Banks)
+  Frag Secondary Particles              1228468352 (Banks)
+  Nuclear De-excitation                  481658880 (Banks)
+  Photon Evaporation                     280544640 (Banks)
   Competitive Fission                            0 (Banks)
  [INFO] *** Residual Banks ***
   Electron Transport                             0 (Banks)
-  Photon Transport                             128 (Banks)
+  Photon Transport                               0 (Banks)
   Positron Transport                             0 (Banks)
   Low Energy Neutron Transport                   0 (Banks)
-  Generic Neutron Transport                     77 (Banks)
+  Generic Neutron Transport                      0 (Banks)
   Generic Ion Transport                        128 (Banks)
   Atomic Relaxation                              0 (Banks)
   Generic ion delta-ray                          0 (Banks)
   Ion-Nuclear Reaction                           0 (Banks)
   Boltzmann Master Equation                      0 (Banks)
-  Frag Secondary Particles                      64 (Banks)
-  Nuclear De-excitation                         84 (Banks)
-  Photon Evaporation                           138 (Banks)
+  Frag Secondary Particles                     116 (Banks)
+  Nuclear De-excitation                         81 (Banks)
+  Photon Evaporation                            77 (Banks)
   Competitive Fission                            0 (Banks)
  [              n15 ]
   Unit                                   #/sr/hist
@@ -170,5 +170,5 @@
   Energy to                                   1000 (MeV)
   Binning method                       log spacing
   Number of bin                                300
- [2025-07-29 17:10:21] 
+ [2025-08-06 14:30:44] 
  [INFO] End of iteration
