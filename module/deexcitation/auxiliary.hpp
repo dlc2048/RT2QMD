@@ -47,56 +47,7 @@ namespace deexcitation {
         = std::filesystem::path("resource") / std::filesystem::path("deexcitation");
 
 
-    class CameronCorrection : 
-        public Singleton<CameronCorrection>,
-        public mcutil::DeviceMemoryHandlerInterface {
-        friend class Singleton<CameronCorrection>;
-    private:
-        static const std::filesystem::path _sp_file;
-        static const std::filesystem::path _spin_file;
-        static const std::filesystem::path _pair_file;
-
-        // value (host)
-        std::vector<float> _sp_correction_p;
-        std::vector<float> _sp_correction_n;
-        std::vector<float> _spin_correction_p;
-        std::vector<float> _spin_correction_n;
-        std::vector<float> _pair_correction_p;
-        std::vector<float> _pair_correction_n;
-
-        // device
-        float* _sp_correction_p_dev;
-        float* _sp_correction_n_dev;
-        float* _spin_correction_p_dev;
-        float* _spin_correction_n_dev;
-        float* _pair_correction_p_dev;
-        float* _pair_correction_n_dev;
-
-
-        CameronCorrection();
-
-
-    public:
-
-
-        float* ptrSpinPairingProton()  const { return this->_sp_correction_p_dev; }
-        float* ptrSpinPairingNeutron() const { return this->_sp_correction_n_dev; }
-        float* ptrSpinProton()         const { return this->_spin_correction_p_dev; }
-        float* ptrSpinNeutron()        const { return this->_spin_correction_n_dev; }
-        float* ptrPairingProton()      const { return this->_pair_correction_p_dev; }
-        float* ptrPairingNeutron()     const { return this->_pair_correction_n_dev; }
-
-
-        ~CameronCorrection();
-
-
-    };
-
-
-    class CoulombBarrier : 
-        public Singleton<CoulombBarrier>,
-        public mcutil::DeviceMemoryHandlerInterface {
-        friend class Singleton<CoulombBarrier>;
+    class CoulombBarrier : public mcutil::DeviceMemoryHandlerInterface {
     private:
         static const std::filesystem::path _cr_file;
 
@@ -106,11 +57,11 @@ namespace deexcitation {
         // value (dev)
         float* _coulomb_radius_dev;
 
-        
-        CoulombBarrier();
-
 
     public:
+
+
+        CoulombBarrier();
 
 
         ~CoulombBarrier();
@@ -144,6 +95,79 @@ namespace deexcitation {
 
 
     };
+
+
+    class ChatterjeeCrossSection {
+    private:
+        static const std::filesystem::path _cj_file;
+    public:
+
+
+        ChatterjeeCrossSection();
+
+
+    };
+
+
+    class KalbachCrossSection {
+    private:
+        static const std::filesystem::path _kb_file;
+    public:
+
+
+        KalbachCrossSection();
+
+
+    };
+
+
+    namespace fission {
+
+
+        class CameronCorrection : public mcutil::DeviceMemoryHandlerInterface {
+        private:
+            static const std::filesystem::path _sp_file;
+            static const std::filesystem::path _spin_file;
+            static const std::filesystem::path _pair_file;
+
+            // value (host)
+            std::vector<float> _sp_correction_p;
+            std::vector<float> _sp_correction_n;
+            std::vector<float> _spin_correction_p;
+            std::vector<float> _spin_correction_n;
+            std::vector<float> _pair_correction_p;
+            std::vector<float> _pair_correction_n;
+
+            // device
+            float* _sp_correction_p_dev;
+            float* _sp_correction_n_dev;
+            float* _spin_correction_p_dev;
+            float* _spin_correction_n_dev;
+            float* _pair_correction_p_dev;
+            float* _pair_correction_n_dev;
+
+
+        public:
+
+
+            CameronCorrection();
+
+
+            ~CameronCorrection();
+
+
+            float* ptrSpinPairingProton()  const { return this->_sp_correction_p_dev; }
+            float* ptrSpinPairingNeutron() const { return this->_sp_correction_n_dev; }
+            float* ptrSpinProton()         const { return this->_spin_correction_p_dev; }
+            float* ptrSpinNeutron()        const { return this->_spin_correction_n_dev; }
+            float* ptrPairingProton()      const { return this->_pair_correction_p_dev; }
+            float* ptrPairingNeutron()     const { return this->_pair_correction_n_dev; }
+
+
+        };
+
+
+    }
 
 
     namespace photon {

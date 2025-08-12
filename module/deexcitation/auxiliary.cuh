@@ -31,6 +31,8 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
+#include "device/shuffle.cuh"
+
 #include "device/memory.cuh"
 #include "hadron/nucleus.cuh"
 #include "transport/buffer.cuh"
@@ -40,6 +42,13 @@
 
 
 namespace deexcitation {
+
+
+    typedef enum XS_MODEL {
+        XS_MODEL_DOSTROVSKY,
+        XS_MODEL_CHATTERJEE,
+        XS_MODEL_KALBACH
+    } XS_MODEL;
 
 
     typedef enum CHANNEL {
@@ -67,10 +76,13 @@ namespace deexcitation {
     } FLAGS;
 
 
-    constexpr float MIN_EXC_ENERGY = (float)2.e-3;  // photon evaporation, min excitation energy [MeV]
+    constexpr float MIN_EXC_ENERGY  = (float)2.e-3;  // photon evaporation, min excitation energy [MeV]
+    constexpr int   MAX_A_BREAKUP   = 30;
+    constexpr float MAX_ENERGY_CJXS = 50.f;          // maximum excitation energy in Chatterjee XS
+    constexpr int   DIM_XS          = 11;
 
-    constexpr int   MAX_A_BREAKUP  = 30;
-
+    constexpr float EDELTA_NEUTRON  = 0.15f;
+    constexpr float EDELTA_CHARGED  = 0.25f;
 
     // emitted particle info
 
@@ -82,25 +94,78 @@ namespace deexcitation {
     extern __device__ float PROJ_M2[CHANNEL::CHANNEL_UNKNWON];      // Square of mass of emitted particle [MeV^2/c^4]
     extern __device__ float PROJ_CB_RHO[CHANNEL::CHANNEL_UNKNWON];  // Coulomb barrier rho [fm]
 
+    // external
+
     extern __constant__ bool BUFFER_HAS_HID;
     extern __device__ mcutil::RingBuffer* buffer_catalog;
 
     extern __device__ curandState* rand_state;
-
-    // mass table
-    extern __device__ Nucleus::MassTable* mass_table;
-
-    // stable nuclei list
-    extern __device__ Nucleus::LongLivedNucleiTable long_lived_table;
+    extern __device__ Nucleus::MassTable* mass_table;  // mass table
+    extern __device__ Nucleus::LongLivedNucleiTable long_lived_table;  // stable nuclei list
 
     // coulomb
+    extern __constant__ float COULOMB_RATIO;
     extern __device__ float* coulomb_r0;
 
-    // fission flag
-    extern __constant__ bool DO_FISSION;
+    // inverse XS
+    extern __device__ float CJXS_PARAM[DIM_XS][CHANNEL::CHANNEL_UNKNWON];  // Chatterjee
+    extern __device__ float KMXS_PARAM[DIM_XS][CHANNEL::CHANNEL_UNKNWON];  // Kalbach-Mann
 
-    // photon flag
-    extern __constant__ bool USE_DISCRETE_LEVEL;
+    extern __constant__ XS_MODEL XS_TYPE;             // inverse XS
+    extern __constant__ bool     DO_FISSION;          // fission flag
+    extern __constant__ bool     USE_DISCRETE_LEVEL;  // photon flag
+
+
+    // Chatterjee
+    namespace Chatterjee {
+
+
+        typedef struct IntegrateSharedMem {
+            int     __pad[2];                              //! @brief memory pad for queue push/pull actions & reduction
+            int     condition_broadcast;                   //! @brief condition broadcast for consistent loop break
+            // Reduction
+            float   redux_r1[CUDA_WARP_SIZE];
+            float   redux_r2[CUDA_WARP_SIZE];
+            // Channel info
+            int     channel;                               //! @brief current evaporation channel
+            float   channel_prob[CHANNEL::CHANNEL_2N];     //! @brief channel selection probability
+            float   channel_prob_max[CHANNEL::CHANNEL_2N]; //! @brief maximum probability of channel
+            int     is_allowed;                            //! @brief true if allowd channel, false elsewhere
+            float   emin;                                  //! @brief minimum energy of Weisskopf integrate [MeV] 
+            float   emax;                                  //! @brief maximum energy of Weisskopf integrate [MeV] 
+            float   cb;                                    //! @brief coulomb barrier [MeV]
+            float   mass;                                  //! @brief mass of the parent nucleus [MeV/c^2]
+            float   exc;                                   //! @brief excitation energy of the parent nucleus [MeV]
+            float   a0;                                    //! @brief level density of the parent nucleus
+            float   a1;                                    //! @brief level density of the residual nucleus
+            int     res_a;                                 //! @brief mass number of the residual nucleus
+            float   res_a13;                               //! @brief res_a^(1/3)
+            float   res_mass;                              //! @brief mass of the residual nucleus [MeV/c^2]
+            float   delta0;                                //! @brief pairing correction of the fragment
+            float   delta1;                                //! @brief pairing correction of the residual nucleus
+            // Numerical
+            float   edelta;                                //! @brief numerical delta
+            int     int_iter;                              //! @brief blockwised integral loop iter
+            int     int_iter_2nd;                          //! @brief 2nd iterator stride
+            // Chatterjee parameters
+            float   muu;                                   //! @brief power paramater
+            float   p;
+            float   landa;
+            float   mu;
+            float   nu;
+            float   q;
+            float   r;
+            // for reduction
+            float   prob;
+            float   prob_max;
+        } IntegrateSharedMem;
+
+
+        constexpr int INTEGRATE_SHARED_MEM_SIZE   = sizeof(IntegrateSharedMem) / 4;
+        constexpr int INTEGRATE_SHARED_MEM_OFFSET = ((INTEGRATE_SHARED_MEM_SIZE - 1) / 32 + 1) * 32;
+
+
+    }
 
 
     __device__ float coulombBarrierRadius(int z, int a);
@@ -122,6 +187,15 @@ namespace deexcitation {
 
 
     __host__ cudaError_t setCoulombBarrierRadius(float* cr_arr);
+
+
+    __host__ cudaError_t setCoulombRatio(float coulomb_penetration_ratio);
+
+
+    __host__ cudaError_t setChatterjeeXS(float xs_host[][(int)CHANNEL::CHANNEL_UNKNWON]);
+
+
+    __host__ cudaError_t setKalbackXS(float xs_host[][(int)CHANNEL::CHANNEL_UNKNWON]);
 
 
     __host__ cudaError_t setEmittedParticleMass(float* mass_arr, float* mass2_arr);

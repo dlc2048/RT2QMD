@@ -41,6 +41,7 @@
 #include "transport/buffer.hpp"
 
 #include "deexcitation/handler.hpp"
+#include "deexcitation/config.hpp"
 #include "deexcitation/deexcitation.cuh"
 
 #include "qmd/reaction.hpp"
@@ -107,6 +108,9 @@ int main(int argc, char* argv[]) {
 
 	// QMD settings
 	mcutil::InputCardFactory<RT2QMD::Host::Config>::readAll(input);
+
+	// De-excitation settings
+	mcutil::InputCardFactory<deexcitation::Host::Config>::readAll(input);
 
 	// Event generator
 	auxiliary::EventGenerator event_generator(input);
@@ -350,7 +354,14 @@ int main(int argc, char* argv[]) {
 					Hadron::secondaryStep(block, thread);
 					break;
 				case mcutil::BUFFER_TYPE::DEEXCITATION:
-					deexcitation::deexcitationStep(block, thread);
+					if (deexcitation::Host::Config::getInstance().crossSectionModel()
+						== deexcitation::XS_MODEL::XS_MODEL_DOSTROVSKY)
+						deexcitation::Dostrovsky::deexcitationStep(block, thread);
+					else if (deexcitation::Host::Config::getInstance().crossSectionModel()
+						== deexcitation::XS_MODEL::XS_MODEL_CHATTERJEE)
+						deexcitation::Chatterjee::deexcitationStep(block, thread);
+					else
+						assert(false);
 					break;
 				case mcutil::BUFFER_TYPE::PHOTON_EVAP:
 					deexcitation::photon::continuumEvaporationStep(block, thread);

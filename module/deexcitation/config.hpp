@@ -19,54 +19,56 @@
 // under the License.
 
 /**
- * @file    module/deexcitation/deexcitation.cuh
- * @brief   Deexcitation kernel
+ * @file    module/deexcitation/config.cpp
+ * @brief   De-excitation config handler
  * @author  CM Lee
- * @date    07/15/2024
+ * @date    08/07/2025
  */
+
 
 #pragma once
 
-#include <cuda_runtime.h>
-#include <assert.h>
 
-#include "device/memory.cuh"
+#include "mclog/logger.hpp"
+#include "parser/input.hpp"
 
 #include "auxiliary.cuh"
-#include "channel_evaporation.cuh"
-#include "channel_fission.cuh"
-#include "channel_photon.cuh"
-#include "channel_unstable_breakup.cuh"
-#include "cross_section.cuh"
 
 
 namespace deexcitation {
 
 
-    __device__ void boostAndWrite(mcutil::BUFFER_TYPE origin, mcutil::UNION_FLAGS flags, float m0, bool is_secondary);
+    namespace Host {
 
 
-    /**
-    * Dostrovsky inverse cross-section
-    */
-    namespace Dostrovsky {
+        //! @brief De-excitation global configurations
+        class Config : public Singleton<Config> {
+            friend class Singleton<Config>;
+        private:
+            float    _coulomb_penetration_ratio;  // Coulomb barrier penetration ratio (corresponded to Geant4 evaporation OPTxs >= 1)
+            XS_MODEL _xs_model;                   // Inverse-cross section model
 
 
-        __global__ void __kernel__deexcitationStep();
-        __host__ void deexcitationStep(int block, int thread);
+            Config();
 
 
-    }
+        public:
 
 
-    /**
-    * Chaterjee inverse cross-section
-    */
-    namespace Chatterjee {
+            Config(mcutil::ArgInput& args);
 
 
-        __global__ void __kernel__deexcitationStep();
-        __host__ void deexcitationStep(int block, int thread);
+            float coulombPenetrationRatio() {
+                return this->_coulomb_penetration_ratio;
+            }
+
+
+            XS_MODEL crossSectionModel() {
+                return this->_xs_model;
+            }
+
+
+        };
 
 
     }

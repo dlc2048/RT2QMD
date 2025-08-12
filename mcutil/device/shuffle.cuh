@@ -114,6 +114,16 @@ __device__ __forceinline__ int rmax32_(int x) {
 }
 
 
+__device__ __forceinline__ float rmax32_(float x) {
+    x = fmaxf(x, __shfl_xor_sync(0xffffffff, x, 16));
+    x = fmaxf(x, __shfl_xor_sync(0xffffffff, x, 8));
+    x = fmaxf(x, __shfl_xor_sync(0xffffffff, x, 4));
+    x = fmaxf(x, __shfl_xor_sync(0xffffffff, x, 2));
+    x = fmaxf(x, __shfl_xor_sync(0xffffffff, x, 1));
+    return x;
+}
+
+
 __device__ __forceinline__ float upSweep_(float x, int mask, int t1) {
     float y = __shfl_xor_sync(0xffffffff, x, mask);
     return t1 ? y + x : x;

@@ -36,6 +36,7 @@
 #include "auxiliary.hpp"
 #include "auxiliary.cuh"
 #include "channel_fission.cuh"
+#include "config.hpp"
 
 
 namespace deexcitation {
@@ -49,6 +50,29 @@ namespace deexcitation {
         float* _dev_m;     // emitted mass [MeV/c^2]
         float* _dev_m2;    // m^2 [MeV^2/c^4]
         float* _dev_crho;  // coulomb barrier rho [fm]
+
+        std::unique_ptr<fission::CameronCorrection> _cameron_correction;
+        std::unique_ptr<CoulombBarrier>    _coulomb_barrier;
+
+        std::unique_ptr<ChatterjeeCrossSection> _chatterjee_xs;
+        std::unique_ptr<KalbachCrossSection>    _kalbach_xs;
+
+
+        void _setFissionData();
+
+
+        void _setMassData();
+
+
+        void _setCoulombBarrierData();
+
+
+        void _setChatterjeeXSData();
+
+
+        void _setKalbachXSData();
+
+
     public:
 
 

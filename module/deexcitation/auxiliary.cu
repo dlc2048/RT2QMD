@@ -40,16 +40,18 @@ namespace deexcitation {
     __device__ mcutil::RingBuffer* buffer_catalog;
 
     __device__ curandState* rand_state;
-
     __device__ Nucleus::MassTable* mass_table;
-
     __device__ Nucleus::LongLivedNucleiTable long_lived_table;
 
+    __constant__ float COULOMB_RATIO;
     __device__ float* coulomb_r0;
 
-    __constant__ bool DO_FISSION;
+    __device__ float CJXS_PARAM[DIM_XS][CHANNEL::CHANNEL_UNKNWON];
+    __device__ float KMXS_PARAM[DIM_XS][CHANNEL::CHANNEL_UNKNWON]; 
 
-    __constant__ bool USE_DISCRETE_LEVEL;
+    __constant__ XS_MODEL XS_TYPE;
+    __constant__ bool     DO_FISSION;
+    __constant__ bool     USE_DISCRETE_LEVEL;
 
 
     __device__ float coulombBarrierRadius(int z, int a) {
@@ -98,6 +100,25 @@ namespace deexcitation {
     __host__ cudaError_t setCoulombBarrierRadius(float* cr_arr) {
         M_SOAPtrMapper(float*, cr_arr, coulomb_r0);
         return cudaSuccess;
+    }
+
+
+    __host__ cudaError_t setCoulombRatio(float coulomb_penetration_ratio) {
+        float coulomb_ratio = 1.f - coulomb_penetration_ratio;
+        M_SOAPtrMapper(float, coulomb_ratio, COULOMB_RATIO);
+        return cudaSuccess;
+    }
+
+
+    __host__ cudaError_t setChatterjeeXS(float xs_host[][(int)CHANNEL::CHANNEL_UNKNWON]) {
+        return cudaMemcpyToSymbol(CJXS_PARAM[0][0], xs_host,
+            sizeof(float) * DIM_XS * (int)CHANNEL::CHANNEL_UNKNWON);
+    }
+
+
+    __host__ cudaError_t setKalbackXS(float xs_host[][(int)CHANNEL::CHANNEL_UNKNWON]) {
+        return cudaMemcpyToSymbol(KMXS_PARAM[0][0], xs_host,
+            sizeof(float) * DIM_XS * (int)CHANNEL::CHANNEL_UNKNWON);
     }
 
 

@@ -39,29 +39,26 @@
 namespace deexcitation {
 
 
-    DeviceMemoryHandler::DeviceMemoryHandler() {
-        mclog::debug("Initialize nuclear de-excitation data ...");
+    void DeviceMemoryHandler::_setFissionData() {
         // Cameron corrections
-        CameronCorrection& correction = CameronCorrection::getInstance();
+        this->_cameron_correction = std::make_unique<fission::CameronCorrection>();
 
         CUDA_CHECK(fission::setCameronSpinPairingCorrections(
-            correction.ptrSpinPairingProton(),
-            correction.ptrSpinPairingNeutron()
+            this->_cameron_correction->ptrSpinPairingProton(),
+            this->_cameron_correction->ptrSpinPairingNeutron()
         ));
         CUDA_CHECK(fission::setCameronPairingCorrections(
-            correction.ptrPairingProton(),
-            correction.ptrPairingNeutron()
+            this->_cameron_correction->ptrPairingProton(),
+            this->_cameron_correction->ptrPairingNeutron()
         ));
         CUDA_CHECK(fission::setCameronSpinCorrections(
-            correction.ptrSpinProton(),
-            correction.ptrSpinNeutron()
+            this->_cameron_correction->ptrSpinProton(),
+            this->_cameron_correction->ptrSpinNeutron()
         ));
+    }
 
-        // Coulomb radius
-        CoulombBarrier& coulomb_barrier = CoulombBarrier::getInstance();
 
-        CUDA_CHECK(setCoulombBarrierRadius(coulomb_barrier.ptrCoulombRadius()));
-
+    void DeviceMemoryHandler::_setMassData() {
         // Emitted particle info
         // mass 
         Nucleus::MassTableHandler& host_mass_table 
@@ -83,49 +80,95 @@ namespace deexcitation {
         for (double mass : m)
             m2.push_back(mass * mass);
 
+        std::vector<float> m_float  = mcutil::cvtVectorDoubleToFloat(m);
+        std::vector<float> m2_float = mcutil::cvtVectorDoubleToFloat(m2);
+
+        mcutil::DeviceVectorHelper m_vec(m_float);
+        mcutil::DeviceVectorHelper m2_vec(m2_float);
+
+        this->_memoryUsageAppend(m_vec.memoryUsage());
+        this->_memoryUsageAppend(m2_vec.memoryUsage());
+
+        this->_dev_m  = m_vec.address();
+        this->_dev_m2 = m2_vec.address();
+
+        CUDA_CHECK(setEmittedParticleMass(this->_dev_m, this->_dev_m2));
+    }
+
+
+    void DeviceMemoryHandler::_setCoulombBarrierData() {
+        // Coulomb radius
+        this->_coulomb_barrier = std::make_unique<CoulombBarrier>();
+
+        CUDA_CHECK(setCoulombBarrierRadius(this->_coulomb_barrier->ptrCoulombRadius()));
+
+        // Coulomb ratio
+        Host::Config& config = Host::Config::getInstance();
+
+        CUDA_CHECK(setCoulombRatio(config.coulombPenetrationRatio()));
+
         // coulomb rho
         std::vector<double> crho;
 
         crho.push_back(0.0);
         crho.push_back(0.0);
-        crho.push_back(coulomb_barrier.coulombBarrierRadius(0, 1));  // neutron
-        crho.push_back(coulomb_barrier.coulombBarrierRadius(1, 1));  // proton
-        crho.push_back(coulomb_barrier.coulombBarrierRadius(1, 2));  // deuteron
-        crho.push_back(coulomb_barrier.coulombBarrierRadius(1, 3));  // triton
-        crho.push_back(coulomb_barrier.coulombBarrierRadius(2, 3));  // He3
-        crho.push_back(coulomb_barrier.coulombBarrierRadius(2, 4));  // He4
+        crho.push_back(this->_coulomb_barrier->coulombBarrierRadius(0, 1));  // neutron
+        crho.push_back(this->_coulomb_barrier->coulombBarrierRadius(1, 1));  // proton
+        crho.push_back(this->_coulomb_barrier->coulombBarrierRadius(1, 2));  // deuteron
+        crho.push_back(this->_coulomb_barrier->coulombBarrierRadius(1, 3));  // triton
+        crho.push_back(this->_coulomb_barrier->coulombBarrierRadius(2, 3));  // He3
+        crho.push_back(this->_coulomb_barrier->coulombBarrierRadius(2, 4));  // He4
         crho.push_back(0.0);
         crho.push_back(0.0);
 
         for (double& cr : crho)
-            cr *= 0.4;
+            cr *= 0.6;
 
         // memory
-        std::vector<float> m_float    = mcutil::cvtVectorDoubleToFloat(m);
-        std::vector<float> m2_float   = mcutil::cvtVectorDoubleToFloat(m2);
         std::vector<float> crho_flaot = mcutil::cvtVectorDoubleToFloat(crho);
 
-        mcutil::DeviceVectorHelper m_vec(m_float);
-        mcutil::DeviceVectorHelper m2_vec(m2_float);
         mcutil::DeviceVectorHelper crho_vec(crho_flaot);
 
-        this->_memoryUsageAppend(m_vec.memoryUsage());
-        this->_memoryUsageAppend(m2_vec.memoryUsage());
         this->_memoryUsageAppend(crho_vec.memoryUsage());
 
-        this->_dev_m    = m_vec.address();
-        this->_dev_m2   = m2_vec.address();
         this->_dev_crho = crho_vec.address();
 
-        CUDA_CHECK(setEmittedParticleMass(this->_dev_m, this->_dev_m2));
         CUDA_CHECK(setEmittedParticleCBRho(this->_dev_crho));
+    }
+
+
+    void DeviceMemoryHandler::_setChatterjeeXSData() {
+        this->_chatterjee_xs = std::make_unique<ChatterjeeCrossSection>();
+    }
+
+
+    void DeviceMemoryHandler::_setKalbachXSData() {
+        this->_kalbach_xs = std::make_unique<KalbachCrossSection>();
+    }
+
+
+    DeviceMemoryHandler::DeviceMemoryHandler() {
+        mclog::debug("Initialize nuclear de-excitation data ...");
+
+        this->_setFissionData();
 
         CUDA_CHECK(setFissionFlag(Define::IonInelastic::getInstance().activateFission()));
 
+        this->_setMassData();
+        this->_setCoulombBarrierData();
+
+        if (Host::Config::getInstance().crossSectionModel() == XS_MODEL::XS_MODEL_CHATTERJEE) {
+            this->_setChatterjeeXSData();
+            this->_setKalbachXSData();
+        }
+        else if (Host::Config::getInstance().crossSectionModel() == XS_MODEL::XS_MODEL_KALBACH) {
+            this->_setKalbachXSData();
+        }
+
         // nucleus symbol
         mclog::debug("Link de-excitation device symbol ...");
-        CUDA_CHECK(deexcitation::setMassTableHandle(Nucleus::MassTableHandler::getInstance().deviceptr()));
-        CUDA_CHECK(deexcitation::setStableTable(Nucleus::ENSDFTable::getInstance().ptrLongLivedNucleiTable()));
+        CUDA_CHECK(setStableTable(Nucleus::ENSDFTable::getInstance().ptrLongLivedNucleiTable()));
+        CUDA_CHECK(setMassTableHandle(Nucleus::MassTableHandler::getInstance().deviceptr()));
     }
 
 
@@ -140,6 +183,7 @@ namespace deexcitation {
     void DeviceMemoryHandler::summary() const {
 
         Define::IonInelastic& ie_def = Define::IonInelastic::getInstance();
+        Host::Config&         config = Host::Config::getInstance();
 
         double bytes_to_mib = 1.0 / (double)mcutil::MEMSIZE_MIB;
 

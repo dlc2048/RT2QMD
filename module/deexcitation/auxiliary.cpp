@@ -39,77 +39,6 @@
 namespace deexcitation {
 
 
-    const std::filesystem::path CameronCorrection::_sp_file 
-        = std::filesystem::path("cameron_sp_correction.bin");
-
-    const std::filesystem::path CameronCorrection::_spin_file
-        = std::filesystem::path("cameron_spin_correction.bin");
-
-    const std::filesystem::path CameronCorrection::_pair_file
-        = std::filesystem::path("cameron_pairing_correction.bin");
-
-
-    CameronCorrection::CameronCorrection() {
-        namespace fp = std::filesystem;
-        std::string home = mcutil::getMCRT2HomePath();
-        if (home.empty())
-            mclog::fatal("Environment variable 'MCRT2_HOME' is missing");
-
-        fp::path sp_file(home);
-        sp_file = sp_file / HOME / this->_sp_file;
-        mcutil::FortranIfstream data_sp(sp_file.string());
-        this->_sp_correction_p = data_sp.read<float>();
-        this->_sp_correction_n = data_sp.read<float>();
-
-        fp::path spin_file(home);
-        spin_file = spin_file / HOME / this->_spin_file;
-        mcutil::FortranIfstream data_spin(spin_file.string());
-        this->_spin_correction_p = data_spin.read<float>();
-        this->_spin_correction_n = data_spin.read<float>();
-
-        fp::path pair_file(home);
-        pair_file = pair_file / HOME / this->_pair_file;
-        mcutil::FortranIfstream data_pair(pair_file.string());
-        this->_pair_correction_p = data_pair.read<float>();
-        this->_pair_correction_n = data_pair.read<float>();
-
-
-        mcutil::DeviceVectorHelper spin_pairing_p(this->_sp_correction_p);
-        mcutil::DeviceVectorHelper spin_pairing_n(this->_sp_correction_n);
-        mcutil::DeviceVectorHelper pairing_p(this->_pair_correction_p);
-        mcutil::DeviceVectorHelper pairing_n(this->_pair_correction_n);
-        mcutil::DeviceVectorHelper spin_p(this->_spin_correction_p);
-        mcutil::DeviceVectorHelper spin_n(this->_spin_correction_n);
-
-        this->_memoryUsageAppend(spin_pairing_p.memoryUsage());
-        this->_memoryUsageAppend(spin_pairing_n.memoryUsage());
-        this->_memoryUsageAppend(pairing_p.memoryUsage());
-        this->_memoryUsageAppend(pairing_n.memoryUsage());
-        this->_memoryUsageAppend(spin_p.memoryUsage());
-        this->_memoryUsageAppend(spin_n.memoryUsage());
-
-        this->_sp_correction_p_dev   = spin_pairing_p.address();
-        this->_sp_correction_n_dev   = spin_pairing_n.address();
-        this->_pair_correction_p_dev = pairing_p.address();
-        this->_pair_correction_n_dev = pairing_n.address();
-        this->_spin_correction_p_dev = spin_p.address();
-        this->_spin_correction_n_dev = spin_n.address();
-    }
-
-
-    CameronCorrection::~CameronCorrection() {
-        // Singleton DLL intended memory leak
-        /*
-        mcutil::DeviceVectorHelper(this->_sp_correction_p_dev).free();
-        mcutil::DeviceVectorHelper(this->_sp_correction_n_dev).free();
-        mcutil::DeviceVectorHelper(this->_pair_correction_p_dev).free();
-        mcutil::DeviceVectorHelper(this->_pair_correction_n_dev).free();
-        mcutil::DeviceVectorHelper(this->_spin_correction_p_dev).free();
-        mcutil::DeviceVectorHelper(this->_spin_correction_n_dev).free();
-        */
-    }
-
-
     const std::filesystem::path CoulombBarrier::_cr_file
         = std::filesystem::path("coulomb_radius.bin");
 
@@ -132,10 +61,7 @@ namespace deexcitation {
 
 
     CoulombBarrier::~CoulombBarrier() {
-        // for DLL
-        /*
         mcutil::DeviceVectorHelper(this->_coulomb_radius_dev).free();
-        */
     }
 
 
@@ -210,6 +136,172 @@ namespace deexcitation {
             }
         }
         return found_channel;
+    }
+
+
+    const std::filesystem::path ChatterjeeCrossSection::_cj_file
+        = std::filesystem::path("chatterjee_param.dat");
+
+
+    ChatterjeeCrossSection::ChatterjeeCrossSection() {
+        namespace fp = std::filesystem;
+        std::string home = mcutil::getMCRT2HomePath();
+        if (home.empty())
+            mclog::fatal("Environment variable 'MCRT2_HOME' is missing");
+
+        fp::path cj_file(home);
+        cj_file = cj_file / HOME / this->_cj_file;
+
+        // Open the file stream
+        std::ifstream xs_in(cj_file.c_str());
+        if (!xs_in.good()) {
+            std::stringstream ss;
+            ss << "Cannot open file '" << cj_file.string() << "'";
+            mclog::fatal(ss);
+        }
+
+        float cjxs_params[DIM_XS][CHANNEL::CHANNEL_UNKNWON];
+
+        std::vector<int> index_list{
+            CHANNEL::CHANNEL_NEUTRON,
+            CHANNEL::CHANNEL_PROTON,
+            CHANNEL::CHANNEL_DEUTERON,
+            CHANNEL::CHANNEL_TRITON,
+            CHANNEL::CHANNEL_HELIUM3,
+            CHANNEL::CHANNEL_ALPHA
+        };
+
+        // Read
+        for (int index : index_list) {
+            for (int i = 0; i < DIM_XS; ++i) {
+                float param;
+                xs_in >> param;
+                cjxs_params[i][index] = param;
+            }
+        }
+
+        CUDA_CHECK(setChatterjeeXS(cjxs_params));
+        return;
+    }
+
+
+    const std::filesystem::path KalbachCrossSection::_kb_file
+        = std::filesystem::path("kalbach_param.dat");
+
+
+    KalbachCrossSection::KalbachCrossSection() {
+        namespace fp = std::filesystem;
+        std::string home = mcutil::getMCRT2HomePath();
+        if (home.empty())
+            mclog::fatal("Environment variable 'MCRT2_HOME' is missing");
+
+        fp::path kb_file(home);
+        kb_file = kb_file / HOME / this->_kb_file;
+
+        // Open the file stream
+        std::ifstream xs_in(kb_file.c_str());
+        if (!xs_in.good()) {
+            std::stringstream ss;
+            ss << "Cannot open file '" << kb_file.string() << "'";
+            mclog::fatal(ss);
+        }
+
+        float kbxs_params[DIM_XS][CHANNEL::CHANNEL_UNKNWON];
+
+        std::vector<int> index_list{
+            CHANNEL::CHANNEL_NEUTRON,
+            CHANNEL::CHANNEL_PROTON,
+            CHANNEL::CHANNEL_DEUTERON,
+            CHANNEL::CHANNEL_TRITON,
+            CHANNEL::CHANNEL_HELIUM3,
+            CHANNEL::CHANNEL_ALPHA
+        };
+
+        // Read
+        for (int index : index_list) {
+            for (int i = 0; i < DIM_XS; ++i) {
+                float param;
+                xs_in >> param;
+                kbxs_params[i][index] = param;
+            }
+        }
+
+        CUDA_CHECK(setKalbackXS(kbxs_params));
+        return;
+    }
+
+
+    namespace fission {
+
+
+        const std::filesystem::path CameronCorrection::_sp_file
+            = std::filesystem::path("cameron_sp_correction.bin");
+
+        const std::filesystem::path CameronCorrection::_spin_file
+            = std::filesystem::path("cameron_spin_correction.bin");
+
+        const std::filesystem::path CameronCorrection::_pair_file
+            = std::filesystem::path("cameron_pairing_correction.bin");
+
+
+        CameronCorrection::CameronCorrection() {
+            namespace fp = std::filesystem;
+            std::string home = mcutil::getMCRT2HomePath();
+            if (home.empty())
+                mclog::fatal("Environment variable 'MCRT2_HOME' is missing");
+
+            fp::path sp_file(home);
+            sp_file = sp_file / HOME / this->_sp_file;
+            mcutil::FortranIfstream data_sp(sp_file.string());
+            this->_sp_correction_p = data_sp.read<float>();
+            this->_sp_correction_n = data_sp.read<float>();
+
+            fp::path spin_file(home);
+            spin_file = spin_file / HOME / this->_spin_file;
+            mcutil::FortranIfstream data_spin(spin_file.string());
+            this->_spin_correction_p = data_spin.read<float>();
+            this->_spin_correction_n = data_spin.read<float>();
+
+            fp::path pair_file(home);
+            pair_file = pair_file / HOME / this->_pair_file;
+            mcutil::FortranIfstream data_pair(pair_file.string());
+            this->_pair_correction_p = data_pair.read<float>();
+            this->_pair_correction_n = data_pair.read<float>();
+
+
+            mcutil::DeviceVectorHelper spin_pairing_p(this->_sp_correction_p);
+            mcutil::DeviceVectorHelper spin_pairing_n(this->_sp_correction_n);
+            mcutil::DeviceVectorHelper pairing_p(this->_pair_correction_p);
+            mcutil::DeviceVectorHelper pairing_n(this->_pair_correction_n);
+            mcutil::DeviceVectorHelper spin_p(this->_spin_correction_p);
+            mcutil::DeviceVectorHelper spin_n(this->_spin_correction_n);
+
+            this->_memoryUsageAppend(spin_pairing_p.memoryUsage());
+            this->_memoryUsageAppend(spin_pairing_n.memoryUsage());
+            this->_memoryUsageAppend(pairing_p.memoryUsage());
+            this->_memoryUsageAppend(pairing_n.memoryUsage());
+            this->_memoryUsageAppend(spin_p.memoryUsage());
+            this->_memoryUsageAppend(spin_n.memoryUsage());
+
+            this->_sp_correction_p_dev = spin_pairing_p.address();
+            this->_sp_correction_n_dev = spin_pairing_n.address();
+            this->_pair_correction_p_dev = pairing_p.address();
+            this->_pair_correction_n_dev = pairing_n.address();
+            this->_spin_correction_p_dev = spin_p.address();
+            this->_spin_correction_n_dev = spin_n.address();
+        }
+
+
+        CameronCorrection::~CameronCorrection() {
+            mcutil::DeviceVectorHelper(this->_sp_correction_p_dev).free();
+            mcutil::DeviceVectorHelper(this->_sp_correction_n_dev).free();
+            mcutil::DeviceVectorHelper(this->_pair_correction_p_dev).free();
+            mcutil::DeviceVectorHelper(this->_pair_correction_n_dev).free();
+            mcutil::DeviceVectorHelper(this->_spin_correction_p_dev).free();
+            mcutil::DeviceVectorHelper(this->_spin_correction_n_dev).free();
+        }
+
+
     }
 
 
