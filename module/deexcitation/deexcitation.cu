@@ -738,6 +738,7 @@ namespace deexcitation {
             cache_zaev[threadIdx.x] = za_evap;
 
             float   max_prob = mcutil::cache_univ[INTEGRATE_SHARED_MEM_OFFSET + threadIdx.x + 3 * blockDim.x];
+            __syncthreads();
 
             // channel shared -> energy shared
 
