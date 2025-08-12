@@ -499,6 +499,7 @@ namespace deexcitation {
                 float delta1 = fission::pairingCorrection(cache_zaev[threadIdx.x].x, cache_zaev[threadIdx.x].y - cache_zaev[threadIdx.x].x);
 
                 // rejection unity
+                /*
                 float x, w;
                 float wmax = mcutil::cache_univ[CUDA_WARP_SIZE + 4 * blockDim.x + threadIdx.x];
                 do {
@@ -508,6 +509,8 @@ namespace deexcitation {
 
                 // return x + eke_min;
                 return cache_zaev[threadIdx.x].y > 4 ? x + eke_min : eke_max;
+                */
+                return eke_max;
             }
 
 
