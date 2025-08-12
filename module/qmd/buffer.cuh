@@ -182,7 +182,7 @@ namespace RT2QMD {
 
 
             extern __device__ int*   flags;
-            extern __device__ float* mass;             //! @brief participant mass [GeV/c^2]
+            extern __device__ float* mass;             //! @brief participant mass [GeV/c^2]  (maybe needed to handle Delta baryons)
             extern __device__ float* position_x;       //! @brief x-position of participant [fm]
             extern __device__ float* position_y;       //! @brief y-position of participant [fm]
             extern __device__ float* position_z;       //! @brief z-position of participant [fm]
