@@ -106,7 +106,8 @@ namespace RT2QMD {
             float x[CUDA_WARP_SIZE];
             float y[CUDA_WARP_SIZE];
             float z[CUDA_WARP_SIZE];
-            float phg[MAX_DIMENSION_CLUSTER];
+            float ps[MAX_DIMENSION_CLUSTER];   //! @brief temporary  phase-space distance data
+            float phg[MAX_DIMENSION_CLUSTER];  //! @brief cumulative phase-space distance data
         } NucleiSharedMem;
 
 

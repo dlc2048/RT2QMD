@@ -941,9 +941,8 @@ namespace RT2QMD {
             NucleiSharedMem* smem = (NucleiSharedMem*)mcutil::cache_univ;
 
             bool prepare_sampling_coeff = true;
-            Buffer::model_cached->nuc_counter.z = 0u;  // local counter, 2nd
+            
             smem->ia = 0;
-            __syncthreads();
 
             // initialize phase-space cumulative data
             for (int i = 0; i <= Buffer::model_cached->current_field_size / blockDim.x; ++i) {
@@ -955,8 +954,8 @@ namespace RT2QMD {
 
             // while (smem->ia < Buffer::model_cached->current_field_size) {
             while (true) {
-                if (!threadIdx.x)
-                    Buffer::model_cached->nuc_counter.z++;
+
+                Buffer::model_cached->nuc_counter.z = 0u;  // local counter, 2nd
                 smem->ib = 0;
 
                 if (!threadIdx.x)
@@ -1061,7 +1060,7 @@ namespace RT2QMD {
                     __syncthreads();
                     for (int i = 0; i <= smem->ia / blockDim.x; ++i) {
                         int   ip = i * blockDim.x + threadIdx.x;
-                        int   mi = m * Buffer::model_cached->current_field_size + ip + Buffer::model_cached->offset_2d;
+                        int   mi = smem->ia * Buffer::model_cached->current_field_size + ip + Buffer::model_cached->offset_2d;
                         float ps = 0.f;
                         float temp;
                         
@@ -1071,22 +1070,27 @@ namespace RT2QMD {
                             float expa = -Buffer::MeanField::rr2[mi] * constants::PAULI_CPW;
                             // momentum space distance
                             temp = Buffer::Participant::momentum_x[ip] - smem->x[m];
-                            ps = temp * temp;
+                            ps   = temp * temp;
                             temp = Buffer::Participant::momentum_y[ip] - smem->y[m];
-                            ps += temp * temp;
+                            ps  += temp * temp;
                             temp = Buffer::Participant::momentum_z[ip] - smem->z[m];
-                            ps += temp * temp;
-                            expa = expa - ps * constants::PAULI_CPH;
-                            ps = expa <= constants::PAULI_EPSX ? 0.f : expf(expa);
+                            ps  += temp * temp;
+                            if (expa > constants::PAULI_EPSX) {
+                                expa = expa - ps * constants::PAULI_CPH;
+                                ps   = expa <= constants::PAULI_EPSX ? 0.f : expf(expa);
+                            }
+                            else
+                                ps = 0.f;
                             if (is_proton != opp_is_proton)
                                 ps = 0.f;
                             ip = i * blockDim.x + threadIdx.x;
-                            if (ps * constants::PAULI_CPC > 0.2f)
+                            if (ps * constants::PAULI_CPC > 0.2f)  // test blocking from the single phase space between ip-ia
                                 smem->blocked = true;
-                            if ((ps + smem->phg[ip]) * constants::PAULI_CPC > 0.5f)
-                                smem->blocked = true;
+                            if ((ps + smem->phg[ip]) > 0.5f)       // test blocking from the total phase space of particle [ip]
+                                smem->blocked = true;  
                         }
                         __syncthreads();
+                        smem->ps[ip] = ps;
 
                         if (!threadIdx.x)
                             Buffer::model_cached->condition_broadcast = smem->blocked;
@@ -1096,64 +1100,36 @@ namespace RT2QMD {
                         if (exit_condition)
                             break;
 
-                        ps = rsum32_(ps);
-                        if (!threadIdx.x) {
-                            atomicAdd(&smem->ps_cumul, ps);
-                            if (smem->ps_cumul * constants::PAULI_CPC > 0.3f)
-                                smem->blocked = true;
-                            Buffer::model_cached->condition_broadcast = smem->blocked;
-                        } 
-                        
+                        ps = rsum32_(ps);  
+                        if (threadIdx.x % CUDA_WARP_SIZE == 0)
+                            atomicAdd(&smem->ps_cumul, ps);  // ps_cumul == sum(ps[ip,ia])
                         __syncthreads();
-                        exit_condition = Buffer::model_cached->condition_broadcast;
-                        __syncthreads();
-                        if (exit_condition)
-                            break;
                     }
 
                     __syncthreads();
-
-                    if (!threadIdx.x)
+                    // test blocking from the total phase space of particle [ia]
+                    if (!threadIdx.x) {
+                        if (smem->ps_cumul * constants::PAULI_CPC > 0.3f)
+                            smem->blocked = true;
+                        if (smem->blocked)
+                            Buffer::model_cached->nuc_counter.z++;
                         Buffer::model_cached->condition_broadcast = smem->blocked;
+                    }
                     __syncthreads();
                     exit_condition = Buffer::model_cached->condition_broadcast;
                     __syncthreads();
-                    if (exit_condition)
+                    if (exit_condition)  // discard momentum "m"
                         continue;
 
-                    if (!threadIdx.x)
-                        smem->phg[smem->ia] = smem->ps_cumul;
+                    // update cumulative phase-space for particle [0:ia]
+                    for (int i = 0; i <= smem->ia / blockDim.x; ++i) {
+                        int ip = i * blockDim.x + threadIdx.x;
+                        if (ip < smem->ia)
+                            smem->phg[ip] += smem->ps[ip];
+                        __syncthreads();
+                    }
                     __syncthreads();
                     
-                    exit_condition = smem->ia == Buffer::model_cached->current_field_size - 1;
-                    __syncthreads();
-                    if (!exit_condition) {
-                        for (int i = 0; i <= smem->ia / blockDim.x; ++i) {
-                            int   ip = i * blockDim.x + threadIdx.x;
-                            int   mi = m * Buffer::model_cached->current_field_size + ip + Buffer::model_cached->offset_2d;
-                            float ps = 0.f;
-                            float temp;
-                            if (ip < smem->ia) {
-                                bool opp_is_proton = ip < Buffer::model_cached->za_nuc[target].x;
-                                ip += Buffer::model_cached->offset_1d + Buffer::model_cached->offset;
-                                float expa = -Buffer::MeanField::rr2[mi] * constants::PAULI_CPW;
-                                // momentum space distance
-                                temp = Buffer::Participant::momentum_x[ip] - smem->x[m];
-                                ps  += temp * temp;
-                                temp = Buffer::Participant::momentum_y[ip] - smem->y[m];
-                                ps  += temp * temp;
-                                temp = Buffer::Participant::momentum_z[ip] - smem->z[m];
-                                ps  += temp * temp;
-                                expa = expa - ps * constants::PAULI_CPH;
-                                ps   = expf(expa);
-                                if (is_proton != opp_is_proton)
-                                    ps = 0.f;
-                                ip = i * blockDim.x + threadIdx.x;
-                                smem->phg[ip] += ps;
-                            }
-                            __syncthreads();
-                        }
-                    }
                     if (!threadIdx.x) {
                         int ip = Buffer::model_cached->offset_1d + Buffer::model_cached->offset + smem->ia;
 
@@ -1164,6 +1140,7 @@ namespace RT2QMD {
                         Buffer::Participant::momentum_x[ip] = smem->x[m];
                         Buffer::Participant::momentum_y[ip] = smem->y[m];
                         Buffer::Participant::momentum_z[ip] = smem->z[m];
+                        smem->phg[smem->ia] = smem->ps_cumul;
                         smem->ia++;
                     }
                     __syncthreads();
