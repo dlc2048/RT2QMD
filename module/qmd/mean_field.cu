@@ -923,6 +923,8 @@ namespace RT2QMD {
                             smem->ia++;
                             Buffer::model_cached->nuc_counter.z = 0u;  // reset counter
                         }
+                        else
+                            Buffer::model_cached->nuc_counter.z++;
                     }
                     __syncthreads();
                 }
