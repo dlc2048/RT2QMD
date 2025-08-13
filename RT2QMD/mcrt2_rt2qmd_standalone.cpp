@@ -182,6 +182,25 @@ int main(int argc, char* argv[]) {
 	mclog::time();
 	mclog::info("All data are prepared!");
 
+	// Print output
+
+	mclog::print("");
+	mclog::print(" ################################################################## ");
+	mclog::print(" #                                                                # ");
+	mclog::print(" #                         Data Summaries                         # ");
+	mclog::print(" #                                                                # ");
+	mclog::print(" ################################################################## ");
+	mclog::print("");
+
+	if (deexcitation_handler)
+		deexcitation_handler->summary();
+
+	if (qmd_handler)
+		qmd_handler->summary();
+
+	buffer_handler.summary();
+
+
 	// symbol link
 
 	// tally

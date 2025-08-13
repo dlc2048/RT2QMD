@@ -402,7 +402,8 @@ namespace RT2QMD {
         this->_initTimer();
 
         // initialize dump
-        if (Host::Config::getInstance().doDumpAction()) {
+        this->_do_dump_action = Host::Config::getInstance().doDumpAction();
+        if (this->_do_dump_action) {
             this->_n_dump = (size_t)Host::Config::getInstance().dumpSize();
             this->_initDumpSystem();
         }
@@ -530,8 +531,27 @@ namespace RT2QMD {
 
     void DeviceMemoryHandler::summary() const {
 
+        double bytes_to_mib = 1.0 / (double)mcutil::MEMSIZE_MIB;
+
+        bool use_persistent_loop = false;
+#ifdef RT2QMD_PERSISTENT_DISPATCHER
+        use_persistent_loop = true;
+#endif
+
         mclog::info("*** QMD Model Summaries ***");
-        
+        mclog::printVar("Use timer             ", this->_use_timer ? "On" : "Off");
+        if (this->_use_timer)
+            mclog::printVar("Maximum timer         ", this->_timer_size);
+        mclog::printVar("Use dump              ", this->_do_dump_action ? "On" : "Off");
+        if (this->_do_dump_action)
+            mclog::printVar("Dump size             ", this->_n_dump);
+        mclog::printVar("Persistent loop kernel", use_persistent_loop ? "On" : "Off");
+        mclog::printVar("Maximum field dim     ", this->_max_field_dimension, "Baryons");
+        mclog::printVar("Number of dim subset  ", this->_n_qmd_prob_group);
+        mclog::printVar("QMD kernel block      ", this->_block);
+        mclog::printVar("QMD kernel thread     ", this->_thread);
+        mclog::printVar("Memory usage          ", this->memoryUsage() * bytes_to_mib, "MiB");
+        mclog::print("");
     }
 
 

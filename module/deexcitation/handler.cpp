@@ -187,9 +187,26 @@ namespace deexcitation {
 
         double bytes_to_mib = 1.0 / (double)mcutil::MEMSIZE_MIB;
 
+        double   cp_ratio = config.coulombPenetrationRatio();
+        XS_MODEL model    = config.crossSectionModel();
+
+        std::string model_str;
+        if (model == XS_MODEL::XS_MODEL_DOSTROVSKY) {
+            model_str = "Dostrovsky";
+            cp_ratio  = 0.0;
+        }
+        else if (model == XS_MODEL::XS_MODEL_CHATTERJEE)
+            model_str = "Chatterjee";
+        else if (model == XS_MODEL::XS_MODEL_KALBACH)
+            model_str = "Kalbach";
+        else
+            assert(false);
+
         mclog::info("*** Nuclear De-Excitation Summaries ***");
         mclog::printVar("Evaporation cutoff    ", ie_def.evaporationCutoff(), "s");
         mclog::printVar("Fission branch        ", ie_def.activateFission() ? "On" : "Off");
+        mclog::printVar("Inverse XS            ", model_str);
+        mclog::printVar("CB penetration ratio  ", cp_ratio);
         mclog::printVar("Memory usage          ", this->memoryUsage() * bytes_to_mib, "MiB");
         mclog::print("");
     }
