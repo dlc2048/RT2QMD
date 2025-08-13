@@ -831,8 +831,10 @@ namespace RT2QMD {
                 if (exit_condition)
                     break;
 
-                if (!threadIdx.x)
+                if (!threadIdx.x) {
+                    Buffer::model_cached->nuc_counter.z++;
                     Buffer::model_cached->condition_broadcast = Buffer::model_cached->nuc_counter.z > 32;
+                }
                 __syncthreads();
                 exit_condition = Buffer::model_cached->condition_broadcast;
                 __syncthreads();
@@ -923,8 +925,6 @@ namespace RT2QMD {
                             smem->ia++;
                             Buffer::model_cached->nuc_counter.z = 0u;  // reset counter
                         }
-                        else
-                            Buffer::model_cached->nuc_counter.z++;
                     }
                     __syncthreads();
                 }
@@ -968,8 +968,10 @@ namespace RT2QMD {
                 if (exit_condition)
                     break;
 
-                if (!threadIdx.x)
+                if (!threadIdx.x) {
+                    Buffer::model_cached->nuc_counter.z++;
                     Buffer::model_cached->condition_broadcast = Buffer::model_cached->nuc_counter.z > 32;
+                }
                 __syncthreads();
                 exit_condition = Buffer::model_cached->condition_broadcast;
                 __syncthreads();
@@ -1113,8 +1115,6 @@ namespace RT2QMD {
                     if (!threadIdx.x) {
                         if (smem->ps_cumul * constants::PAULI_CPC > 0.3f)
                             smem->blocked = true;
-                        if (smem->blocked)
-                            Buffer::model_cached->nuc_counter.z++;
                         Buffer::model_cached->condition_broadcast = smem->blocked;
                     }
                     __syncthreads();
