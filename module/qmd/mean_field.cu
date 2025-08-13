@@ -820,8 +820,7 @@ namespace RT2QMD {
             __syncthreads();
 
             while (true) {
-                if (!threadIdx.x)
-                    Buffer::model_cached->nuc_counter.z++;
+
                 smem->ib = 0;
 
                 if (!threadIdx.x)
@@ -922,6 +921,7 @@ namespace RT2QMD {
                             Buffer::Participant::position_y[ip] = smem->y[m];
                             Buffer::Participant::position_z[ip] = smem->z[m];
                             smem->ia++;
+                            Buffer::model_cached->nuc_counter.z = 0u;  // reset counter
                         }
                     }
                     __syncthreads();
@@ -942,6 +942,7 @@ namespace RT2QMD {
 
             bool prepare_sampling_coeff = true;
             
+            Buffer::model_cached->nuc_counter.z = 0u;  // local counter, 2nd
             smem->ia = 0;
 
             // initialize phase-space cumulative data
@@ -955,7 +956,6 @@ namespace RT2QMD {
             // while (smem->ia < Buffer::model_cached->current_field_size) {
             while (true) {
 
-                Buffer::model_cached->nuc_counter.z = 0u;  // local counter, 2nd
                 smem->ib = 0;
 
                 if (!threadIdx.x)
@@ -1142,6 +1142,7 @@ namespace RT2QMD {
                         Buffer::Participant::momentum_z[ip] = smem->z[m];
                         smem->phg[smem->ia] = smem->ps_cumul;
                         smem->ia++;
+                        Buffer::model_cached->nuc_counter.z = 0u;  // reset loop counter
                     }
                     __syncthreads();
                     prepare_sampling_coeff = true;
