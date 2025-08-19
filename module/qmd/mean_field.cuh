@@ -282,8 +282,8 @@ namespace RT2QMD {
 
 //#ifndef NDEBUG
 
-        constexpr int    __SYSTEM_TEST_DIMENSION = 24;
-        constexpr short2 __TEST_PROJECTILE_ZA    = { 6, 12 };
+        constexpr int    __SYSTEM_TEST_DIMENSION = 13;
+        constexpr short2 __TEST_PROJECTILE_ZA    = { 1, 1  };
         constexpr short2 __TEST_TARGET_ZA        = { 6, 12 };
 
 

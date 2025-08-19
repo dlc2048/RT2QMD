@@ -179,7 +179,7 @@ namespace RT2QMD {
                             is_binary_candidate = false;
 
                         // impact parameter
-                        float pij  = pi.x * pj.x + pi.y * pj.y + pi.z * pj.z;
+                        float pij  = ei * ej - pi.x * pj.x - pi.y * pj.y - pi.z * pj.z;
                         temp = mi * mj / pij;
                         float aij  = 1.f - temp * temp;
                         float bij  = pidr / mi - pjdr * mj / pij;
@@ -996,7 +996,7 @@ namespace RT2QMD {
                                 & PARTICIPANT_FLAGS::PARTICIPANT_IS_PROTON;
                             temp   = Buffer::MeanField::rha[mi];
                             rho_a += temp;
-                            temp   = ci == cj ? temp : -temp;
+                            temp   = ci && cj ? temp : -temp;
                             rho_s += temp;
                             rho_c += Buffer::MeanField::rhe[mi];
                         }
@@ -1914,21 +1914,31 @@ namespace RT2QMD {
                         if (!threadIdx.x) {
                             if (smem->cluster_z[ic] == Buffer::model_cached->za_nuc[0].x &&
                                 smem->cluster_a[ic] == Buffer::model_cached->za_nuc[0].y &&
-                                !smem->elastic_count[0]) {
+                                !smem->elastic_count[0] && 
+                                smem->cluster_excit[ic] < 1e-3f) {
                                 smem->elastic_count[0] = 1;
                             }
                             else if (smem->cluster_z[ic] == Buffer::model_cached->za_nuc[1].x &&
-                                     smem->cluster_a[ic] == Buffer::model_cached->za_nuc[1].y &&
-                                     !smem->elastic_count[1]) {
-                                     smem->elastic_count[1] = 1;
+                                smem->cluster_a[ic] == Buffer::model_cached->za_nuc[1].y &&
+                                !smem->elastic_count[1] &&
+                                smem->cluster_excit[ic] < 1e-3f) {
+                                smem->elastic_count[1] = 1;
                             }
                         }
                         __syncthreads();
                     }
-                    if (smem->elastic_count[0] && smem->elastic_count[1] && !Buffer::model_cached->n_collisions)  // elastic
-                        return false;
                 }
                 __syncthreads();
+                if (!threadIdx.x) {
+                    Buffer::model_cached->condition_broadcast
+                        = (Buffer::model_cached->n_cluster == (smem->elastic_count[0] + smem->elastic_count[1])) 
+                        || !Buffer::model_cached->n_collisions;
+                }
+                __syncthreads();
+                bool exit_condition = Buffer::model_cached->condition_broadcast;
+                __syncthreads();
+                if (exit_condition)
+                    return false;
 
                 if (leading_lane) {
                     // Rotate azimuthally
@@ -2113,50 +2123,103 @@ namespace RT2QMD {
         }
 
 
-#ifndef NDEBUG
+// #ifndef NDEBUG
 
 
         __device__ int   __ty[__SYSTEM_TEST_DIMENSION] = {
             1 ,1 ,1, 1, 1, 1,
-            0, 0, 0, 0, 0, 0,
-            1, 1, 1, 1, 1, 1,
-            0, 0, 0, 0, 0, 0
+            1, 0, 0, 0, 0, 0,
+            0
         };
         __device__ float __rx[__SYSTEM_TEST_DIMENSION] = {
-            -1.98524,    -1.91334,    -0.820065,   -2.97985 ,   -3.22144,    -2.30599,
-            -2.96504,    -2.29629,    -4.33615 ,   -1.27956 ,   -1.92462,    -3.22246,
-            1.62377 ,    1.68683 ,     3.32409 ,    1.12105 ,    4.29198,     1.75454,
-            2.23116 ,    2.98777 ,     3.91328 ,    0.960796,    2.74402,     2.62454
+            0.42370283,
+            -0.25114421,
+            0.068107257,
+            -0.41019688,
+            -0.36229584,
+            0.74729458 ,
+            -1.513965  ,
+            0.94585468 ,
+            -2.1727771 ,
+            0.40510836 ,
+            -1.698325  ,
+            -0.10051287,
+            -0.73917758
         };
         __device__ float __ry[__SYSTEM_TEST_DIMENSION] = {
-           -0.200787 ,    1.52382,     1.75647 ,    0.786124,    -0.899925,   -1.57078 ,
-            1.80299  ,   -1.43579,    -1.24464 ,    0.173322,     0.283042,   -0.974308,
-            0.472283 ,   -1.03056,    -0.493642,   -1.3177  ,     0.411882,    1.54386 ,
-            0.195139 ,    1.36682,     0.899496,    0.664835,    -1.80904 ,   -0.895495
+            0,
+            1.9502336   ,
+            -0.78753821 ,
+            -0.5797463  ,
+            0.71121365  ,
+            1.0635165   ,
+            -0.079209769,
+            -0.36802059 ,
+            -1.2645569  ,
+            0.47540646  ,
+            0.067765115 ,
+            0.59055584  ,
+            -1.778644   
         };
         __device__ float __rz[__SYSTEM_TEST_DIMENSION] = {
-            4.74696 ,     4.26156,     3.41295,     5.6671 ,     3.32437,     5.98132,
-            5.22276 ,     4.48783,     4.4728 ,     5.21732,     3.31465,     5.21975,
-            -3.8469 ,    -2.87205,    -4.71484,    -5.14864,    -3.48896,    -4.90615,
-            -3.33724,    -5.97976,    -4.92249,    -6.17678,    -4.85863,    -5.07696
+            -6.0451651  ,
+            1.1151029   ,
+            -0.8283231  ,
+            1.6847113   ,
+            -0.67067438 ,
+            0.47888543  ,
+            -0.020776753,
+            0.62063589  ,
+            0.96518106  ,
+            1.7790254   ,
+            0.19258982  ,
+            0.13988829  ,
+            0.63355193  
         };
         __device__ float __px[__SYSTEM_TEST_DIMENSION] = {
-            0.00631942,   0.0634713 ,   0.0234787,   -0.0629798 ,  0.00408035,   1.76E-05  ,
-            0.0214417 ,   0.0758955 ,  -0.0444026,   -0.150157  ,  0.0622998 ,  -0.00106864,
-            0.0896532 ,  -0.0742939 ,   0.0457343,   -0.00266003,  0.0557753 ,  -0.0758651 ,
-            0.0600493 ,   0.00114591,   0.0337269,   -0.0836346 , -0.0305961 ,  -0.0177727
+            0.000113967 ,
+            0.066124229 ,
+            0.052756946 ,
+            -0.027715845,
+            -0.025602835,
+            -0.094829371,
+            -0.14740498 ,
+            0.026251016 ,
+            0.005506176 ,
+            0.10197033  ,
+            0.14342994  ,
+            -0.039335758,
+            -0.061477779
         };
         __device__ float __py[__SYSTEM_TEST_DIMENSION] = {
-            0.101838  ,  -0.0488751 ,  0.0739428,   -0.0188565,   0.0470832 ,   0.0309679,
-            -0.074474 ,   0.00675886,  0.0507543,   -0.069778 ,   0.00553081,  -0.105027 ,
-            -0.0586822,   0.0267235 ,  0.0806152,   -0.052967 ,  -0.0969983 ,  -0.135114 ,
-            0.034035  ,  -0.0528342 ,  0.0956546,    0.0604633,   0.127277  ,  -0.0278493
+            0           ,
+            0.1289389   ,
+            0.031011966 ,
+            0.10378358  ,
+            0.000510521 ,
+            -0.11068619 ,
+            -0.045298254,
+            0.093261045 ,
+            0.024547294 ,
+            -0.00562062 ,
+            -0.063106446,
+            -0.13444035 ,
+            -0.022564755
         };
         __device__ float __pz[__SYSTEM_TEST_DIMENSION] = {
-            -0.204227,   -0.497483,   -0.388736,   -0.396508,   -0.358078,   -0.499644,
-            -0.348246,   -0.304225,   -0.190018,   -0.346926,   -0.477583,   -0.466718,
-            0.411787 ,    0.391206,    0.309637,    0.312706,    0.37542 ,    0.249735,
-            0.44372  ,    0.479352,    0.353083,    0.278547,    0.342303,    0.530666
+            0.36594985 ,
+            -0.31117322,
+            -0.4324972 ,
+            -0.49632705,
+            -0.23858873,
+            -0.37504256,
+            -0.43760341,
+            -0.44857978,
+            -0.4424278 ,
+            -0.28607104,
+            -0.38059904,
+            -0.30936049,
+            -0.24922456
         };
 
 
@@ -2200,7 +2263,7 @@ namespace RT2QMD {
         }
 
 
-#endif
+// #endif
 
 
     }
