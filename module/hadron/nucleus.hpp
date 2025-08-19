@@ -50,6 +50,35 @@ namespace Nucleus {
     inline const std::filesystem::path HOME = std::filesystem::path("resource/hadron");
 
 
+    class HadronNuclearBarashenkovCorrection :
+        public Singleton<HadronNuclearBarashenkovCorrection>,
+        public mcutil::DeviceMemoryHandlerInterface {
+        friend class Singleton<HadronNuclearBarashenkovCorrection>;
+    private:
+        static const std::filesystem::path _nc_file;
+        static const std::filesystem::path _pc_file;
+
+        float* _correction[2];
+
+
+        HadronNuclearBarashenkovCorrection();
+
+
+        ~HadronNuclearBarashenkovCorrection();
+
+
+    public:
+
+
+        float* nCorrectionPtr() { return this->_correction[0]; }
+
+
+        float* pCorrectionPtr() { return this->_correction[1]; }
+
+
+    };
+
+
     class MassRecord {
         friend std::istream& operator>>(std::istream& in, MassRecord& record);
         friend bool operator<(const MassRecord& lhs, const MassRecord& rhs);
@@ -126,8 +155,6 @@ namespace Nucleus {
         int    spin()       const { return this->_spin; }
         double dmoment()    const { return this->_dmoment; }
     };
-
-
 
 
     class ENSDFTable : 

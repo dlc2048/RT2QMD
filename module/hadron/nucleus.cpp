@@ -89,6 +89,54 @@ namespace Nucleus {
     }
 
 
+    const std::filesystem::path HadronNuclearBarashenkovCorrection::_nc_file
+        = std::filesystem::path("neutronBarashenkov.dat");
+    const std::filesystem::path HadronNuclearBarashenkovCorrection::_pc_file
+        = std::filesystem::path("protonBarashenkov.dat");
+
+
+    HadronNuclearBarashenkovCorrection::HadronNuclearBarashenkovCorrection()
+        : _correction{ nullptr, nullptr } {
+        namespace fp = std::filesystem;
+        std::string home = mcutil::getMCRT2HomePath();
+        if (home.empty())
+            mclog::fatal("Environment variable 'MCRT2_HOME' is missing");
+        fp::path files[2];
+        files[0] = fp::path(home) / HOME / this->_nc_file;
+        files[1] = fp::path(home) / HOME / this->_pc_file;
+
+        for (size_t i = 0; i < 2; ++i) {
+            std::ifstream cor_in(files[i].c_str());
+            if (!cor_in.good()) {
+                std::stringstream ss;
+                ss << "Cannot open file '" << files[i].string() << "'";
+                mclog::fatal(ss);
+            }
+
+            std::vector<float> correction_list;
+            std::string line;
+            while (!std::getline(cor_in, line).eof()) {
+                std::stringstream ss(line);
+                do {
+                    float cor;
+                    ss >> cor;
+                    if (ss.eof()) break;
+                    correction_list.push_back(cor);
+                } while (true);
+            }
+
+            mcutil::DeviceVectorHelper correction_vec(correction_list);
+            this->_memoryUsageAppend(correction_vec.memoryUsage());
+            this->_correction[i] = correction_vec.address();
+        }
+    }
+
+
+    HadronNuclearBarashenkovCorrection::~HadronNuclearBarashenkovCorrection() {
+        /* intended leakage */
+    }
+
+
     const std::filesystem::path MassTableHandler::_mass_file = std::filesystem::path("walletlifetime.dat");
 
 

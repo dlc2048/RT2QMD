@@ -35,6 +35,9 @@
 namespace Nucleus {
 
 
+    constexpr int BARASHENKOV_ZMAX = 92;
+
+
     /**
     * @brief Get the explicit radius for light nucleii
     * @param za Charge and mass number of nuclei
@@ -100,6 +103,19 @@ namespace Nucleus {
                 r = x;
         }
         return r;
+    }
+
+
+    /**
+    * @brief Get the nuclear radius, hadron-nuclear scattering
+    * @param za Charge and mass number of nuclei
+    *
+    * @return Radius of nuclei [fm]
+    */
+    __inline__ __host__ __device__ float nuclearRadiusHadronNuclear(uchar2 za) {
+        float r = expf(-(float)(za.y - 20) / 20.f);
+        r = za.y > 20 ? 0.8f + 0.2f * r : 1.f + 0.1f * r;
+        return 1.08f * powf((float)za.y, constants::ONE_OVER_THREE) * r;
     }
 
 
