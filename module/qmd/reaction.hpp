@@ -34,6 +34,10 @@
 
 #include "transport/buffer.hpp"
 
+#ifndef RT2QMD_STANDALONE
+#include "material/material.hpp"
+#endif
+
 #include "buffer.hpp"
 #include "reaction.cuh"
 
