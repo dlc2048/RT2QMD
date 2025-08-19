@@ -38,6 +38,10 @@
 
 #include "nuc_secondary/secondary.cuh"
 
+#ifndef RT2QMD_STANDALONE
+#include "xs_dev.cuh"
+#endif
+
 
 namespace genion {
 
