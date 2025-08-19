@@ -76,8 +76,8 @@ namespace Hadron {
         // host structure
         NNScatteringTable table_host;
         for (size_t i = 0; i < 2; ++i) {
-            table_host.nenergy[i] = this->_nenergy[0];
-            table_host.nangle[i]  = this->_nangle[0];
+            table_host.nenergy[i] = this->_nenergy[i];
+            table_host.nangle[i]  = this->_nangle[i];
 
             mcutil::DeviceVectorHelper sig(this->_sig[i]);
             mcutil::DeviceVectorHelper elab(this->_elab[i]);
