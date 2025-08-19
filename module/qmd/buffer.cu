@@ -42,6 +42,8 @@ namespace RT2QMD {
 
     __device__ Nucleus::MassTable* mass_table;
 
+    __device__ float* barashenkov_corr[2];
+
 
     __host__ cudaError_t setBufferHandle(CUdeviceptr handle, bool has_hid) {
         M_SOASymbolMapper(mcutil::RingBuffer*, handle, buffer_catalog);
@@ -59,6 +61,12 @@ namespace RT2QMD {
     __host__ cudaError_t setMassTableHandle(CUdeviceptr handle) {
         M_SOASymbolMapper(Nucleus::MassTable*, handle, mass_table);
         return cudaSuccess;
+    }
+
+
+    __host__ cudaError_t setBarashenkovPtr(float* corr_neutron, float* corr_proton) {
+        float* corr[2] = { corr_neutron, corr_proton };
+        return cudaMemcpyToSymbol(barashenkov_corr[0], corr, sizeof(float*) * 2);
     }
 
 

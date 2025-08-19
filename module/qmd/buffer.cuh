@@ -134,7 +134,6 @@ namespace RT2QMD {
         int    iter_glane;                //! @brief number of graduate lane iteration
     } QMDModel;
 
-
     extern __constant__ bool BUFFER_HAS_HID;
     extern __device__ mcutil::RingBuffer* buffer_catalog;  //! @brief Global buffer
 
@@ -142,6 +141,9 @@ namespace RT2QMD {
 
     // mass table
     extern __device__ Nucleus::MassTable* mass_table;
+
+    // HN corrections
+    extern __device__ float* barashenkov_corr[2];
 
 
     __host__ cudaError_t setBufferHandle(CUdeviceptr handle, bool has_hid);
@@ -151,6 +153,9 @@ namespace RT2QMD {
 
 
     __host__ cudaError_t setMassTableHandle(CUdeviceptr handle);
+
+
+    __host__ cudaError_t setBarashenkovPtr(float* corr_neutron, float* corr_proton);
 
 
     namespace Buffer {
