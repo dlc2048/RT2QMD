@@ -158,7 +158,7 @@ namespace RT2QMD {
                     = MODEL_STAGE::MODEL_SAMPLE_TARGET_POSITION;
                 break;
             case MODEL_STAGE::MODEL_SAMPLE_TARGET_POSITION:
-                if (Buffer::model_cached->za_nuc[0].y != 1) {
+                if (Buffer::model_cached->za_nuc[1].y != 1) {
                     if (MeanField::sampleNucleonPosition(true)) {
                         Buffer::model_cached->initial_flags.qmd.phase
                             = MODEL_STAGE::MODEL_SAMPLE_TARGET_MOMENTUM;
@@ -367,15 +367,36 @@ namespace RT2QMD {
 
         // impact parameter
         eke = Buffer::model_cached->initial_eke;
-        float rp    = Nucleus::nuclearRadius({ zapt.x, zapt.y });
-        float rt    = Nucleus::nuclearRadius({ zapt.z, zapt.w });
-        float cb    = Hadron::coulombBarrier((int)zapt.x * (int)zapt.z, m1, m2, eke, rp + rt);
+        
 
         eke /= (float)zapt.y;  // per nucleon
         float sigpp = Hadron::xsNucleonNucleon(true, true,  eke);
         float sigpn = Hadron::xsNucleonNucleon(true, false, eke);
-        float ns    = ::constants::FP32_TWE_PI * (rp * rp + rt * rt);
-        float xs0   = Hadron::xsNucleiNuclei({ zapt.x, zapt.y }, { zapt.z, zapt.w }, cb, sigpp, sigpn, ns);
+        float ns, xs0;
+        // hadron-nuclear
+        if (zapt.y == 1 || zapt.w == 1) {
+            float rt;
+            bool  is_proton;
+            if (zapt.y == 1) {
+                rt = Nucleus::nuclearRadiusHadronNuclear({ zapt.z, zapt.w });
+                is_proton = zapt.x == 1;
+                xs0       = barashenkov_corr[is_proton][min(Nucleus::BARASHENKOV_ZMAX, zapt.z)];
+            }
+            else {
+                rt = Nucleus::nuclearRadiusHadronNuclear({ zapt.x, zapt.y });
+                is_proton = zapt.z == 1;
+                xs0       = barashenkov_corr[is_proton][min(Nucleus::BARASHENKOV_ZMAX, zapt.x)];
+            }
+            ns   = ::constants::FP32_TWE_PI * rt * rt;
+            xs0 *= Hadron::xsNucleiNuclei({ zapt.x, zapt.y }, { zapt.z, zapt.w }, 1.f, sigpp, sigpn, ns);
+        }
+        else {
+            float rp = Nucleus::nuclearRadius({ zapt.x, zapt.y });
+            float rt = Nucleus::nuclearRadius({ zapt.z, zapt.w });
+            float cb = Hadron::coulombBarrier((int)zapt.x * (int)zapt.z, m1, m2, eke, rp + rt);
+            ns  = ::constants::FP32_TWE_PI * (rp * rp + rt * rt);
+            xs0 = Hadron::xsNucleiNuclei({ zapt.x, zapt.y }, { zapt.z, zapt.w }, cb, sigpp, sigpn, ns);
+        }
 
         Buffer::model_cached->maximum_impact_parameter = sqrtf(xs0 * ::constants::FP32_TEN_PI_I) * constants::ENVELOP_F;
         assertNAN(Buffer::model_cached->maximum_impact_parameter);
