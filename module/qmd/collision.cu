@@ -117,8 +117,8 @@ namespace RT2QMD {
             // shared memory
             CollisionSharedMem* smem = (CollisionSharedMem*)mcutil::cache_univ;
 
-            bool isospin = smem->flag[lane_leading] & PARTICIPANT_FLAGS::PARTICIPANT_IS_PROTON
-                == smem->flag[lane_leading + 1] & PARTICIPANT_FLAGS::PARTICIPANT_IS_PROTON;
+            bool isospin = (smem->flag[lane_leading] & PARTICIPANT_FLAGS::PARTICIPANT_IS_PROTON)
+                && (smem->flag[lane_leading + 1] & PARTICIPANT_FLAGS::PARTICIPANT_IS_PROTON);
 
             // build boost vector
             float ene   = 0.f;
@@ -230,7 +230,6 @@ namespace RT2QMD {
             else {  // Geant4 style NN
                 float elab = smem->mass[lane_leading];
                 elab = sqrtf(plab * plab + elab * elab) - elab;
-
                 int   je1    = 0;
                 int   je2    = g4_nn_table->nenergy[isospin] - 1;
                 int   nangle = g4_nn_table->nangle[isospin];
@@ -312,6 +311,7 @@ namespace RT2QMD {
             __syncwarp();
 
             // two particles should be opposite after collision
+            /*
             float grad = 0.f;
             temp   = smem->rx[lane_leading + 1] - smem->rx[lane_leading];
             temp  *= pnew.x;
@@ -331,13 +331,14 @@ namespace RT2QMD {
 
             // backscattering
             if (lane_idx % 2) {
-                if (curand_uniform(&rand_state[blockIdx.x * blockDim.x + threadIdx.x]) > 0.5f) {
+                if (grad < 0.f) {
                     int temp = smem->flag[lane_leading];
                     smem->flag[lane_leading]     = smem->flag[lane_leading + 1];
                     smem->flag[lane_leading + 1] = temp;
                 }
             }
             __syncwarp();
+            */
 
             temp   = __shfl_xor_sync(0xffffffff, pnew.x, 1);
             pnew.x = lane_idx % 2 ? -temp : pnew.x;
@@ -411,6 +412,7 @@ namespace RT2QMD {
             float rhos = 0.f;
             float rhoc = 0.f;
             float rho3;
+            float pf   = 0.f;  // pauli factor (for later)
 
             float3 pj;  // opposite
             float  temp;
@@ -448,16 +450,11 @@ namespace RT2QMD {
                     float pij2 = 0.f;
                     float gij2 = 0.f;
 
-                    float pidr = 0.f;
-                    float pjdr = 0.f;
-
                     // vector x
                     float rij;
                     rij   = smem->rx[ip];
                     rij  -= Buffer::Participant::position_x[pidj];  // dr.x (static)
                     assertNAN(rij);
-                    pidr += rij * smem->px[ip];
-                    pjdr += rij * pj.x;
                     temp  = smem->px[ip] + pj.x;   // p4ij.x
                     rbrb += rij  * temp;           // rij.x  * p4ij.x
                     gij2 += temp * temp;           // p4ij.x * p4ij.x
@@ -469,10 +466,8 @@ namespace RT2QMD {
                     rij   = smem->ry[ip];
                     rij  -= Buffer::Participant::position_y[pidj];
                     assertNAN(rij);
-                    pidr += rij * smem->py[ip];
-                    pjdr += rij * pj.y;
                     temp  = smem->py[ip] + pj.y;
-                    rbrb += rij * temp;
+                    rbrb += rij  * temp;
                     gij2 += temp * temp;
                     rij2 += rij * rij;
                     temp  = smem->py[ip] - pj.y;
@@ -482,8 +477,6 @@ namespace RT2QMD {
                     rij   = smem->rz[ip];
                     rij  -= Buffer::Participant::position_z[pidj];
                     assertNAN(rij);
-                    pidr += rij * smem->pz[ip];
-                    pjdr += rij * pj.z;
                     temp  = smem->pz[ip] + pj.z;
                     rbrb += rij  * temp;
                     gij2 += temp * temp;
@@ -491,12 +484,24 @@ namespace RT2QMD {
                     temp  = smem->pz[ip] - pj.z;
                     pij2 += temp * temp;
 
-                    temp = ei + ej;
+                    temp  = ei + ej;
                     rbrb /= temp;         // rij * p4ij.boost = (rij.x * p4ij.x + rij.y * p4ij.y + rij.z * p4ij.z) / p4ij.e
                     gij2 /= temp * temp;  // p4ij.boost.mag2
-                    gij2 = 1.f / sqrtf(1.f - gij2); // gammaij
-                    gij2 = gij2 * gij2;
+                    gij2  = 1.f / sqrtf(1.f - gij2); // gammaij
+                    gij2  = gij2 * gij2;
                     rij2 += gij2 * rbrb * rbrb;
+
+                    // distance terms
+                    // rij2 == rr2
+                    // pij2 == pp2
+                    temp  = ci == cj ? 0.f : constants::MASS_DIF_2 / (ei + ej);
+                    temp  = temp * temp;
+                    pij2 += gij2 * temp - (ei - ej) * (ei - ej);
+
+                    // Pauli factor
+                    temp = -rij2 * constants::PAULI_CPW;
+                    temp = temp > constants::PAULI_EPSX ? temp - pij2 * constants::PAULI_CPH : constants::PAULI_EPSX;
+                    pf  += (temp > constants::PAULI_EPSX) && (ci == cj) ? expf(temp) : 0.f;
 
                     // mean field matrix element
                     // Gauss term
@@ -528,6 +533,7 @@ namespace RT2QMD {
             rhoa = rsum32_(rhoa);
             rhoc = rsum32_(rhoc);
             rhos = rsum32_(rhos);
+            pf   = rsum32_(pf);
             rho3 = powf(rhoa, constants::H_SKYRME_GAMM);
             
             if (warp_idx < 2 && !lane_idx) {
@@ -536,6 +542,7 @@ namespace RT2QMD {
                     constants::H_SKYRME_C3 * rho3 +
                     constants::H_SYMMETRY  * rhos +
                     constants::H_COULOMB   * rhoc;
+                smem->pauli_factor[warp_idx] = (pf - 1.f) * constants::PAULI_CPC;
             }
         }
 
@@ -580,6 +587,9 @@ namespace RT2QMD {
             //        printf("%d %d %d \n", blockIdx.x, smem->binary_candidate[i].x, smem->binary_candidate[i].y);
             //    }
             //}
+            __syncthreads();
+            if (!n_bc)
+                return;
 
             __syncthreads();
             for (int ib = 0; ib <= n_bc * BINARY_MAX_TRIAL_2 / CUDA_WARP_SIZE; ++ib) {
@@ -622,8 +632,8 @@ namespace RT2QMD {
                 bool exit_condition;
                 for (int ip = 0; ip < CUDA_WARP_SIZE; ip += 2) {
                     __syncthreads();
-                    int phid = (ip + ib * CUDA_WARP_SIZE) / 2;  // number (multiplied by trial number)
-                    int prid = phid >> BINARY_MAX_TRIAL_SHIFT;
+                    int prid = (ip + ib * CUDA_WARP_SIZE) / 2;  // number (multiplied by trial number)
+                    prid = prid >> BINARY_MAX_TRIAL_SHIFT;
                     if (prid >= n_bc)
                         break;
 
@@ -669,7 +679,7 @@ namespace RT2QMD {
                         continue;
 
                     // pauli block (skip all -> G4 RQMD)
-                    if (isPauliBlocked(phid)) {
+                    if (isPauliBlocked()) {
                         ip = ((ip / BINARY_MAX_TRIAL_2) + 1) * BINARY_MAX_TRIAL_2;
                         continue;
                     }
@@ -726,10 +736,33 @@ namespace RT2QMD {
         }
 
 
-        __device__ bool isPauliBlocked(int candidate_id) {
-            int lane_idx = threadIdx.x %  CUDA_WARP_SIZE;
-            int warp_idx = threadIdx.x >> CUDA_WARP_SHIFT;
-            int smid     = (candidate_id % (CUDA_WARP_SIZE / 2)) * 2;
+        __device__ bool isPauliBlocked() {
+
+            // shared memory
+            CollisionSharedMem* smem = (CollisionSharedMem*)mcutil::cache_univ;
+
+            // using leading thread
+            bool blocked = false;
+            if (!threadIdx.x) {
+                if (smem->pauli_factor[0] > curand_uniform(&rand_state[threadIdx.x + blockIdx.x * blockDim.x]))
+                    blocked = true;
+                if (smem->pauli_factor[1] > curand_uniform(&rand_state[threadIdx.x + blockIdx.x * blockDim.x]))
+                    blocked = true;
+                Buffer::model_cached->condition_broadcast = blocked;
+            }
+            __syncthreads();
+            blocked = Buffer::model_cached->condition_broadcast;
+            __syncthreads();
+            return blocked;
+        }
+
+
+        /*
+        __device__ bool isPauliBlocked(int phid) {
+            int lane_idx     = threadIdx.x %  CUDA_WARP_SIZE;
+            int warp_idx     = threadIdx.x >> CUDA_WARP_SHIFT;
+            int smid         = (phid % (CUDA_WARP_SIZE / 2)) * 2;
+            int candidate_id = phid >> BINARY_MAX_TRIAL_SHIFT;
             // shared memory
             CollisionSharedMem* smem = (CollisionSharedMem*)mcutil::cache_univ;
             
@@ -766,11 +799,15 @@ namespace RT2QMD {
                         * Buffer::model_cached->current_field_size + pid;
                     int   mai2     = (int)smem->binary_candidate[candidate_id].x
                         * Buffer::model_cached->current_field_size + pid;
-                    float pij21    = 0.f;
-                    float gij21    = 0.f;
-                    float pij22    = 0.f;
-                    float gij22    = 0.f;
-                    float pj;
+                    float rij21     = 0.f;
+                    float rbrb21    = 0.f;
+                    float rij22     = 0.f;
+                    float rbrb22    = 0.f;
+                    float pij21     = 0.f;
+                    float gij21     = 0.f;
+                    float pij22     = 0.f;
+                    float gij22     = 0.f;
+                    float rj, pj, rij;
                     float ej;
                     bool  cj;
                     bool  smem_op1 = pid == (int)smem->binary_candidate[candidate_id].x;
@@ -782,18 +819,25 @@ namespace RT2QMD {
                     ej  *= ej;
 
                     // vector x;
+                    rj     = Buffer::Participant::position_x[pid];
+                    rj     = smem_op1 ? smem->rx[smid + 1] : rj;
+                    rj     = smem_op2 ? smem->rx[smid]     : rj;
                     pj     = Buffer::Participant::momentum_x[pid];
                     pj     = smem_op1 ? smem->px[smid + 1] : pj;
                     pj     = smem_op2 ? smem->px[smid]     : pj;
-                    ej    += pj * pj;
-                    temp   = smem->px[smid] + pj;
-                    gij21 += temp * temp;
-                    temp   = smem->px[smid + 1] + pj;
-                    gij22 += temp * temp;
-                    temp   = smem->px[smid] - pj;
-                    pij21 += temp * temp;
-                    temp   = smem->px[smid + 1] - pj;
-                    pij22 += temp * temp;
+
+                    rij     = smem->rx[smid] - rj;
+                    ej     += pj * pj;
+                    temp    = smem->px[smid] + pj;
+                    rbrb21 += rij  * temp;
+                    gij21  += temp * temp;
+
+                    temp    = smem->px[smid + 1] + pj;
+                    gij22  += temp * temp;
+                    temp    = smem->px[smid] - pj;
+                    pij21  += temp * temp;
+                    temp    = smem->px[smid + 1] - pj;
+                    pij22  += temp * temp;
 
                     // vector y;
                     pj     = Buffer::Participant::momentum_y[pid];
@@ -872,6 +916,7 @@ namespace RT2QMD {
             __syncthreads();
             return (bool)pauli_blocked;
         }
+        */
 
 
     }

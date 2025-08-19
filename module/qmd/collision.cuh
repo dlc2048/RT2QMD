@@ -48,9 +48,8 @@ namespace RT2QMD {
         constexpr int BINARY_MAX_TRIAL       = (1 << BINARY_MAX_TRIAL_SHIFT);    // G4QMDCollision (iitry < 4) in line 589
         constexpr int BINARY_MAX_TRIAL_2     = BINARY_MAX_TRIAL << 1;
 
-        constexpr float ENERGY_CONSERVATION_VIOLATION_THRES = 1.2e-4f;
-
-
+        constexpr float ENERGY_CONSERVATION_VIOLATION_THRES = 1.2e-4;
+       
         extern __constant__ bool USING_INCL_NN_SCATTERING;
         extern __device__   Hadron::NNScatteringTable* g4_nn_table;
 
@@ -61,9 +60,9 @@ namespace RT2QMD {
         typedef struct CollisionSharedMem {
             float  __offset_shared[Buffer::MODEL_CACHING_OFFSET];
             unsigned int is_hit[MAX_DIMENSION_CLUSTER_B];           //! @brief participant hit mask
-            int    pauli_blocked;                                   //! @brief for broadcast
             float  pot_ini[2];                                      //! @brief potential before collision (for candidate i and j)
             float  pot_fin[2];                                      //! @brief potential after collision (for candidate i and j)
+            float  pauli_factor[2];                                 //! @brief Pauli blocking factor (for candidate i and j)
             int    n_binary_candidate;                              //! @brief number of collision candidates
             int    exit_condition;                                  //! @brief exit condition broadcaster
             uchar2 binary_candidate[BINARY_CANDIDATE_MAX];
@@ -107,7 +106,7 @@ namespace RT2QMD {
         __device__ void calKinematicsOfBinaryCollisions();
 
 
-        __device__ bool isPauliBlocked(int candidate_id);
+        __device__ bool isPauliBlocked();
 
 
     }
