@@ -65,7 +65,6 @@ namespace RT2QMD {
 
 
         __device__ void cal2BodyQuantities(bool prepare_collision) {
-
             float  temp;
             float3 pi, pj;
             float  rij;
@@ -182,7 +181,7 @@ namespace RT2QMD {
                         float pij  = ei * ej - pi.x * pj.x - pi.y * pj.y - pi.z * pj.z;
                         temp = mi * mj / pij;
                         float aij  = 1.f - temp * temp;
-                        float bij  = pidr / mi - pjdr * mj / pij;
+                        float bij  = pidr / mi - pjdr * mi / pij;
                         temp = pidr / mi;
                         float cij  = rij2 + temp * temp;
                         float brel = sqrtf(fabsf(cij - bij * bij / aij));
@@ -697,6 +696,8 @@ namespace RT2QMD {
             Buffer::model_cached->ebini = ebini;
             Buffer::model_cached->ebin0 = ebin0;
             Buffer::model_cached->ebin1 = ebin1;
+
+            __syncthreads();
 
             // set participant target tape & type
             for (int i = 0; i <= a / blockDim.x; ++i) {
@@ -1499,7 +1500,7 @@ namespace RT2QMD {
                 
                 // exit condition 2 : exceeded trials
                 if (!threadIdx.x)
-                    Buffer::model_cached->condition_broadcast = Buffer::model_cached->nuc_counter.z > 32;
+                    Buffer::model_cached->condition_broadcast = Buffer::model_cached->nuc_counter.z > 128;
                 __syncthreads();
                 exit_condition = Buffer::model_cached->condition_broadcast;
                 __syncthreads();
@@ -2127,99 +2128,68 @@ namespace RT2QMD {
 
 
         __device__ int   __ty[__SYSTEM_TEST_DIMENSION] = {
-            1 ,1 ,1, 1, 1, 1,
-            1, 0, 0, 0, 0, 0,
-            0
+            1, 1, 0, 0,
+            1, 1, 0, 0
         };
         __device__ float __rx[__SYSTEM_TEST_DIMENSION] = {
-            0.42370283,
-            -0.25114421,
-            0.068107257,
-            -0.41019688,
-            -0.36229584,
-            0.74729458 ,
-            -1.513965  ,
-            0.94585468 ,
-            -2.1727771 ,
-            0.40510836 ,
-            -1.698325  ,
-            -0.10051287,
-            -0.73917758
+            -0.10158235 ,
+            0.72067395  ,
+            -0.97453712 ,
+            0.060683257 ,
+            -0.10225884 ,
+            0.49750201  ,
+            -0.014132084,
+            -0.088478698,
         };
         __device__ float __ry[__SYSTEM_TEST_DIMENSION] = {
-            0,
-            1.9502336   ,
-            -0.78753821 ,
-            -0.5797463  ,
-            0.71121365  ,
-            1.0635165   ,
-            -0.079209769,
-            -0.36802059 ,
-            -1.2645569  ,
-            0.47540646  ,
-            0.067765115 ,
-            0.59055584  ,
-            -1.778644   
+            0.42773858  ,
+            0.1005052   ,
+            -0.49166741 ,
+            -0.036403314,
+            0.091605191 ,
+            0.28090859  ,
+            0.17233284  ,
+            -0.54417083 ,
         };
         __device__ float __rz[__SYSTEM_TEST_DIMENSION] = {
-            -6.0451651  ,
-            1.1151029   ,
-            -0.8283231  ,
-            1.6847113   ,
-            -0.67067438 ,
-            0.47888543  ,
-            -0.020776753,
-            0.62063589  ,
-            0.96518106  ,
-            1.7790254   ,
-            0.19258982  ,
-            0.13988829  ,
-            0.63355193  
+            3.4852763 ,
+            3.3392554 ,
+            2.4992543 ,
+            4.0971398 ,
+            -3.253758 ,
+            -3.912132 ,
+            -3.2840768,
+            -2.97527  ,
         };
         __device__ float __px[__SYSTEM_TEST_DIMENSION] = {
-            0.000113967 ,
-            0.066124229 ,
-            0.052756946 ,
-            -0.027715845,
-            -0.025602835,
-            -0.094829371,
-            -0.14740498 ,
-            0.026251016 ,
-            0.005506176 ,
-            0.10197033  ,
-            0.14342994  ,
-            -0.039335758,
-            -0.061477779
+             0.012185653 ,
+             -0.01674243 ,
+             0.01697307  ,
+             -0.012303435,
+             0.085427952 ,
+             -0.047501764,
+             -0.056030553,
+             0.018051074 ,
         };
         __device__ float __py[__SYSTEM_TEST_DIMENSION] = {
-            0           ,
-            0.1289389   ,
-            0.031011966 ,
-            0.10378358  ,
-            0.000510521 ,
-            -0.11068619 ,
-            -0.045298254,
-            0.093261045 ,
-            0.024547294 ,
-            -0.00562062 ,
-            -0.063106446,
-            -0.13444035 ,
-            -0.022564755
+            0.007869958 ,
+            0.017080171 ,
+            -0.009123698,
+            -0.015900367,
+            -0.016485498,
+            0.003562073 ,
+            -0.019066466,
+            0.032033603 ,
         };
         __device__ float __pz[__SYSTEM_TEST_DIMENSION] = {
-            0.36594985 ,
-            -0.31117322,
-            -0.4324972 ,
-            -0.49632705,
-            -0.23858873,
-            -0.37504256,
-            -0.43760341,
-            -0.44857978,
-            -0.4424278 ,
-            -0.28607104,
-            -0.38059904,
-            -0.30936049,
-            -0.24922456
+            -0.39454301,
+            -0.29543948,
+            -0.34338917,
+            -0.43590747,
+            0.32579357 ,
+            0.4012009  ,
+            0.32260298 ,
+            0.41966313 ,
         };
 
 
@@ -2228,7 +2198,7 @@ namespace RT2QMD {
             for (int iter = 0; iter <= __SYSTEM_TEST_DIMENSION / blockDim.x; ++iter) {
                 int pid = iter * blockDim.x + threadIdx.x;
                 if (pid < __SYSTEM_TEST_DIMENSION) {
-                    Buffer::model_cached->participant_idx[pid] = (unsigned char)pid;
+                    // Buffer::model_cached->participant_idx[pid] = (unsigned char)pid;
                     int flag = 0;
                     int mi   = Buffer::model_cached->offset_1d + pid;
                     flag |= (pid < __TEST_PROJECTILE_ZA.y)
@@ -2249,7 +2219,7 @@ namespace RT2QMD {
                 }
                 __syncthreads();
             }           
-            setDimension(__SYSTEM_TEST_DIMENSION);
+            //setDimension(__SYSTEM_TEST_DIMENSION);
             //cal2BodyQuantities();
             //calGraduate();
             
