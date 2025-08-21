@@ -48,7 +48,7 @@
 namespace RT2QMD {
 
 
-    void DeviceMemoryHandler::_pullEligibleFields() {
+    void DeviceMemoryHandler::_pullEligibleFields(bool return_to_origin) {
         if (this->_cluster_dump == nullptr) {
             this->_pull_counter = 0u;
             this->_cluster_dump = std::make_unique<mcutil::FortranOfunformatted>("initial_fields.bin");
@@ -104,21 +104,22 @@ namespace RT2QMD {
                 participants[j].m     =  flags[offset_1d + j] & PARTICIPANT_IS_PROTON 
                     ? ::constants::MASS_PROTON_GEV 
                     : ::constants::MASS_NEUTRON_GEV;
-                /*
-                participants[j].x     =  pos_x[offset_1d + j] - model_current.cc_rx[target];
-                participants[j].y     =  pos_y[offset_1d + j];
-                participants[j].z     = (pos_z[offset_1d + j] - model_current.cc_rz[target]) * model_current.cc_gamma[target];
-                participants[j].px    =  mom_x[offset_1d + j] - model_current.cc_px[target];
-                participants[j].py    =  mom_y[offset_1d + j];
-                participants[j].pz    = (mom_z[offset_1d + j] - model_current.cc_pz[target]) / model_current.cc_gamma[target];
-                */
-                participants[j].x  = pos_x[offset_1d + j];
-                participants[j].y  = pos_y[offset_1d + j];
-                participants[j].z  = pos_z[offset_1d + j];
-                participants[j].px = mom_x[offset_1d + j];
-                participants[j].py = mom_y[offset_1d + j];
-                participants[j].pz = mom_z[offset_1d + j];
-
+                if (return_to_origin) {
+                    participants[j].x  =  pos_x[offset_1d + j] - model_current.cc_rx[target];
+                    participants[j].y  =  pos_y[offset_1d + j];
+                    participants[j].z  = (pos_z[offset_1d + j] - model_current.cc_rz[target]) * model_current.cc_gamma[target];
+                    participants[j].px =  mom_x[offset_1d + j] - model_current.cc_px[target];
+                    participants[j].py =  mom_y[offset_1d + j];
+                    participants[j].pz = (mom_z[offset_1d + j] - model_current.cc_pz[target]) / model_current.cc_gamma[target];
+                }
+                else {
+                    participants[j].x  = pos_x[offset_1d + j];
+                    participants[j].y  = pos_y[offset_1d + j];
+                    participants[j].z  = pos_z[offset_1d + j];
+                    participants[j].px = mom_x[offset_1d + j];
+                    participants[j].py = mom_y[offset_1d + j];
+                    participants[j].pz = mom_z[offset_1d + j];
+                }
             }
             this->_cluster_dump->write(participants);
         }
@@ -583,7 +584,7 @@ namespace RT2QMD {
             this->_measureTime("__host__pullEligibleField", this->_block, this->_thread);
             
             // pull 
-            // this->_pullEligibleFields();
+            // this->_pullEligibleFields(true);
 #else
             __host__prepareModel(this->_block, this->_thread, buffer_idx);
             this->_measureTime("__host__prepareModel", this->_block, this->_thread);
@@ -593,6 +594,9 @@ namespace RT2QMD {
             this->_measureTime("__host__prepareTarget", this->_block, this->_thread);
 #endif
             __host__propagate(this->_block, this->_thread);                    // do propagate
+
+            this->_pullEligibleFields(false);
+
             __host__finalize(this->_block, this->_thread, buffer_idx);         // finalize
 
             // pull 

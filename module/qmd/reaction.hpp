@@ -112,7 +112,7 @@ namespace RT2QMD {
         size_t _pull_counter;
 
 
-        void _pullEligibleFields();
+        void _pullEligibleFields(bool return_to_origin);
 
 
         // ... to here
