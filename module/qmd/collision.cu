@@ -117,8 +117,8 @@ namespace RT2QMD {
             // shared memory
             CollisionSharedMem* smem = (CollisionSharedMem*)mcutil::cache_univ;
 
-            bool isospin = (smem->flag[lane_leading] & PARTICIPANT_FLAGS::PARTICIPANT_IS_PROTON)
-                && (smem->flag[lane_leading + 1] & PARTICIPANT_FLAGS::PARTICIPANT_IS_PROTON);
+            bool isospin = !((smem->flag[lane_leading] & PARTICIPANT_FLAGS::PARTICIPANT_IS_PROTON)
+                ^ (smem->flag[lane_leading + 1] & PARTICIPANT_FLAGS::PARTICIPANT_IS_PROTON));
 
             // build boost vector
             float ene   = 0.f;
@@ -578,7 +578,7 @@ namespace RT2QMD {
             __syncthreads();
 
             // sort binary candidates
-            // sortCollisionCandidates();
+            sortCollisionCandidates();
 
             // load data
             int n_bc = smem->n_binary_candidate;
