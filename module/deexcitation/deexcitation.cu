@@ -98,11 +98,6 @@ namespace deexcitation {
         momentum.y += beta * axis.y * (alpha * bp - gamma * etot);
         momentum.z += beta * axis.z * (alpha * bp - gamma * etot);
 
-        // DEBUG phasespace
-        assert(!isnan(momentum.x));
-        assert(!isnan(momentum.y));
-        assert(!isnan(momentum.z));
-
         // boost to Z direction
         /*
         momentum.z -= beta * (gamma * (gamma / (1.f + gamma) * momentum.z * beta - etot));
@@ -176,6 +171,15 @@ namespace deexcitation {
                 buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].flags[offset]
                     = deex_flags.astype<unsigned int>();
 
+                // DEBUG phasespace
+                assert(!isnan(momentum.x));
+                assert(!isnan(momentum.y));
+                assert(!isnan(momentum.z));
+
+                assert(!isinf(momentum.x));
+                assert(!isinf(momentum.y));
+                assert(!isinf(momentum.z));
+
                 // momentum
                 buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].u[offset] = momentum.x;
                 buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].v[offset] = momentum.y;
@@ -233,6 +237,15 @@ namespace deexcitation {
                 // flag
                 buffer_catalog[mcutil::BUFFER_TYPE::NUC_SECONDARY].flags[offset]
                     = deex_flags.astype<unsigned int>();
+
+                // DEBUG phasespace
+                assert(!isnan(momentum.x));
+                assert(!isnan(momentum.y));
+                assert(!isnan(momentum.z));
+
+                assert(!isinf(momentum.x));
+                assert(!isinf(momentum.y));
+                assert(!isinf(momentum.z));
 
                 // momentum
                 buffer_catalog[mcutil::BUFFER_TYPE::NUC_SECONDARY].u[offset] = momentum.x;
@@ -468,6 +481,11 @@ namespace deexcitation {
 
             mcutil::cache_univ[CUDA_WARP_SIZE +     blockDim.x + threadIdx.x] = mass_nuc;
             mcutil::cache_univ[CUDA_WARP_SIZE + 3 * blockDim.x + threadIdx.x] = exc_energy;
+
+            // initialize momentum vector (for stables)
+            mcutil::cache_univ[CUDA_WARP_SIZE + 5 * blockDim.x + threadIdx.x] = 0.f;
+            mcutil::cache_univ[CUDA_WARP_SIZE + 6 * blockDim.x + threadIdx.x] = 0.f;
+            mcutil::cache_univ[CUDA_WARP_SIZE + 7 * blockDim.x + threadIdx.x] = 0.f;
 
             // handle particle evaporation
             if (channel >= CHANNEL::CHANNEL_NEUTRON && 
@@ -745,6 +763,11 @@ namespace deexcitation {
             mcutil::cache_univ[CUDA_WARP_SIZE +     blockDim.x + threadIdx.x] = mass_nuc;
             mcutil::cache_univ[CUDA_WARP_SIZE + 3 * blockDim.x + threadIdx.x] = exc_energy;
             mcutil::cache_univ[CUDA_WARP_SIZE + 4 * blockDim.x + threadIdx.x] = max_prob * 1.05f;  // safety margin of rejection unity (1.05)
+
+            // initialize momentum vector (for stables)
+            mcutil::cache_univ[CUDA_WARP_SIZE + 5 * blockDim.x + threadIdx.x] = 0.f;
+            mcutil::cache_univ[CUDA_WARP_SIZE + 6 * blockDim.x + threadIdx.x] = 0.f;
+            mcutil::cache_univ[CUDA_WARP_SIZE + 7 * blockDim.x + threadIdx.x] = 0.f;
 
             // handle particle evaporation
             if (channel >= CHANNEL::CHANNEL_NEUTRON &&
