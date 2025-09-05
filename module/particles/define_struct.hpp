@@ -73,17 +73,21 @@ namespace Define {
 
 
     typedef enum PID {
-        PID_VACANCY      = -3,
-        PID_DELTARAY     = -2,
-        PID_ELECTRON     = -1,
-        PID_PHOTON       = +0,
-        PID_POSITRON     = +1,
-        PID_NEUTRON      = +6,
-        PID_PROTON       = +21,
-        PID_GENION       = +26,
-        PID_IONNUC       = +27,
-        PID_ALL          = +99,  // for scoring
-        PID_UNKNOWN      = -99
+        // transport
+        PID_ELECTRON     = (1 << 0),
+        PID_PHOTON       = (1 << 1),
+        PID_POSITRON     = (1 << 2),
+        PID_NEUTRON      = (1 << 3),
+        PID_GENION       = (1 << 4),
+        // logical
+        PID_VACANCY      = (1 << 5),
+        PID_DELTARAY     = (1 << 6),
+        PID_IONNUC       = (1 << 7),
+        // union
+        PID_EM           = PID_ELECTRON | PID_PHOTON | PID_POSITRON,
+        PID_HADRON       = PID_NEUTRON | PID_GENION,
+        PID_ALL          = PID_EM | PID_HADRON,
+        PID_UNKNOWN      = 0
     } PID;
 
 }
