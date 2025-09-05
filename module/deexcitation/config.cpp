@@ -63,10 +63,8 @@ namespace deexcitation {
                 this->_xs_model = XS_MODEL::XS_MODEL_DOSTROVSKY;
             else if (xs_model == "chatterjee")
                 this->_xs_model = XS_MODEL::XS_MODEL_CHATTERJEE;
-            else if (xs_model == "kalbach") {
+            else if (xs_model == "kalbach")
                 this->_xs_model = XS_MODEL::XS_MODEL_KALBACH;
-                mclog::fatal("'kalbach' model is not implemented");
-            }
             else 
                 mclog::fatal("'xs_model' must be 'dostrovsky', 'chatterjee' or 'kalbach'");
 

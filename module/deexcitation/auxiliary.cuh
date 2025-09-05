@@ -148,7 +148,6 @@ namespace deexcitation {
             int     int_iter;                              //! @brief blockwised integral loop iter
             int     int_iter_2nd;                          //! @brief 2nd iterator stride
             // Chatterjee parameters
-            float   muu;                                   //! @brief power paramater
             float   p;
             float   landa;
             float   mu;
@@ -159,6 +158,60 @@ namespace deexcitation {
             float   prob;
             float   prob_max;
         } IntegrateSharedMem;
+
+
+        constexpr int INTEGRATE_SHARED_MEM_SIZE   = sizeof(IntegrateSharedMem) / 4;
+        constexpr int INTEGRATE_SHARED_MEM_OFFSET = ((INTEGRATE_SHARED_MEM_SIZE - 1) / 32 + 1) * 32;
+
+
+    }
+
+
+    // Kalbach
+    namespace Kalbach {
+
+
+        typedef struct IntegrateSharedMem {
+            int     __pad[2];                              //! @brief memory pad for queue push/pull actions & reduction
+            int     condition_broadcast;                   //! @brief condition broadcast for consistent loop break
+            // Reduction
+            float   redux_r1[CUDA_WARP_SIZE];
+            float   redux_r2[CUDA_WARP_SIZE];
+            // Channel info
+            int     channel;                               //! @brief current evaporation channel
+            float   channel_prob[CHANNEL::CHANNEL_2N];     //! @brief channel selection probability
+            float   channel_prob_max[CHANNEL::CHANNEL_2N]; //! @brief maximum probability of channel
+            int     is_allowed;                            //! @brief true if allowd channel, false elsewhere
+            float   emin;                                  //! @brief minimum energy of Weisskopf integrate [MeV] 
+            float   emax;                                  //! @brief maximum energy of Weisskopf integrate [MeV] 
+            float   cb;                                    //! @brief coulomb barrier [MeV]
+            float   mass;                                  //! @brief mass of the parent nucleus [MeV/c^2]
+            float   exc;                                   //! @brief excitation energy of the parent nucleus [MeV]
+            float   a0;                                    //! @brief level density of the parent nucleus
+            float   a1;                                    //! @brief level density of the residual nucleus
+            int     res_a;                                 //! @brief mass number of the residual nucleus
+            float   res_a13;                               //! @brief res_a^(1/3)
+            float   res_mass;                              //! @brief mass of the residual nucleus [MeV/c^2]
+            float   delta0;                                //! @brief pairing correction of the fragment
+            float   delta1;                                //! @brief pairing correction of the residual nucleus
+            // Numerical
+            float   edelta;                                //! @brief numerical delta
+            int     int_iter;                              //! @brief blockwised integral loop iter
+            int     int_iter_2nd;                          //! @brief 2nd iterator stride
+            // Kalbach parameters
+            float   signor;
+            float   a;
+            float   b;
+            float   ecut;
+            float   p;
+            float   lambda;
+            float   mu;
+            float   nu;
+            float   geom;
+            // for reduction
+            float   prob;
+            float   prob_max;
+        };
 
 
         constexpr int INTEGRATE_SHARED_MEM_SIZE   = sizeof(IntegrateSharedMem) / 4;

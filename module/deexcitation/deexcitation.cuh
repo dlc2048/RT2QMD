@@ -72,4 +72,17 @@ namespace deexcitation {
     }
 
 
+    /**
+    * Kalbach inverse cross-section
+    */
+    namespace Kalbach {
+
+
+        __global__ void __kernel__deexcitationStep();
+        __host__ void deexcitationStep(int block, int thread);
+
+
+    }
+
+
 }

@@ -37,46 +37,90 @@
 namespace deexcitation {
 
 
-    /**
-    * @brief Calculate Kalbach power parameter (thread-wised)
-    * @param res_a   Mass number of residual nuclei
-    * @param channel Evaporation channel
-    */
-    __inline__ __device__ float powerParameter(int res_a, int channel);
+    namespace Chatterjee {
 
 
-    /**
-    * @brief Set Chatterjee shared memory parameters, block-wised
-    */
-    __device__ void setChatterjeeSharedParameters(int channel, int z, int a, float mass, float exc_energy);
+        /**
+        * @brief Set Chatterjee shared memory parameters, block-wised
+        */
+        __device__ void setSharedParameters(int channel, int z, int a, float mass, float exc_energy);
 
 
-    /**
-    * @brief Set Chatterjee shared memory parameters, thread-wised
-    */
-    __device__ void setChatterjeeParameters(int channel, float cb, int res_a);
+        /**
+        * @brief Set Chatterjee shared memory parameters, thread-wised
+        */
+        __device__ void setParameters(int channel, float cb, int res_a);
 
 
-    /**
-    * @brief Calculate Chatterjee inverse cross-section (block-wised)
-    */
-    __device__ float crossSectionChatterjeeShared(float k);
+        /**
+        * @brief Calculate Chatterjee inverse cross-section (block-wised)
+        */
+        __device__ float crossSectionShared(float k);
 
 
-    /**
-    * @brief Calculate Chatterjee inverse cross-section (thread-wised)
-    * @param k       Kinetic energy of emitted particle [MeV]
-    * 
-    * @return Chatterjee inverse cross-section [mb]
-    */
-    __device__ float crossSectionChatterjee(int channel, float k);
+        /**
+        * @brief Calculate Chatterjee inverse cross-section (thread-wised)
+        * @param k       Kinetic energy of emitted particle [MeV]
+        *
+        * @return Chatterjee inverse cross-section [mb]
+        */
+        __device__ float crossSection(int channel, float k);
 
+
+    }
+
+
+    namespace Kalbach {
+
+
+        constexpr float FLOW  = 1.e-18f;
+        constexpr float SPILL = 1.e+18f;
+
+
+        /**
+        * @brief Calculate Kalbach power parameter (thread-wised)
+        * @param res_a   Mass number of residual nuclei
+        * @param channel Evaporation channel
+        */
+        __inline__ __device__ float powerParameter(int res_a, int channel);
+
+
+        /**
+        * @brief Set Kalbach shared memory parameters, block-wised
+        */
+        __device__ void setSharedParameters(int channel, int z, int a, float mass, float exc_energy);
+
+
+        /**
+        * @brief Set Kalbach shared memory parameters, thread-wised
+        */
+        __device__ void setParameters(int channel, int res_a);
+
+
+
+        /**
+        * @brief Calculate Kalbach inverse cross-section (block-wised)
+        * @param k Kinetic energy of the projectile [MeV]
+        */
+        __device__ float crossSectionShared(float k);
+
+
+        /**
+        * @brief Calculate Kalbach inverse cross-section (thread-wised)
+        * @param k       Kinetic energy of emitted particle [MeV]
+        *
+        * @return Kalbach inverse cross-section [mb]
+        */
+        __device__ float crossSection(int channel, float k, float signor);
+
+
+    }
 
 
 #ifdef __CUDACC__
 
 
-    __inline__ __device__ float powerParameter(int res_a, int channel) {
+    __inline__ __device__ float Kalbach::powerParameter(int res_a, int channel) {
         return powf((float)res_a, KMXS_PARAM[6][channel]);
     }
 

@@ -328,7 +328,7 @@ namespace deexcitation {
 
             // evaporation branch probability
             for (int channel = CHANNEL::CHANNEL_NEUTRON; channel < CHANNEL::CHANNEL_2N; ++channel) {
-                prob        = evaporation::emissionProbability((CHANNEL)channel, za_evap.x, za_evap.y, mass_nuc, exc_energy);
+                prob        = emissionProbability((CHANNEL)channel, za_evap.x, za_evap.y, mass_nuc, exc_energy);
                 prob_cumul += prob;
                 mcutil::cache_univ[CUDA_WARP_SIZE + threadIdx.x + channel * blockDim.x] = prob;
                 __syncthreads();
@@ -490,7 +490,7 @@ namespace deexcitation {
             // handle particle evaporation
             if (channel >= CHANNEL::CHANNEL_NEUTRON && 
                 channel <  CHANNEL::CHANNEL_UNKNWON) {
-                evaporation::emitParticle(&rand_state[idx], channel);
+                emitParticle(&rand_state[idx], channel);
             }
             __syncthreads();
         
@@ -581,7 +581,7 @@ namespace deexcitation {
             __syncthreads();
 
             // shared memory
-            Chatterjee::IntegrateSharedMem* smem = (Chatterjee::IntegrateSharedMem*)mcutil::cache_univ;
+            IntegrateSharedMem* smem = (IntegrateSharedMem*)mcutil::cache_univ;
 
             // evaporation branch probability (blockwise working group)
             for (int i = 0; i < blockDim.x; ++i) {
@@ -595,13 +595,13 @@ namespace deexcitation {
                 __syncthreads();
                 for (int channel = CHANNEL::CHANNEL_NEUTRON; channel < CHANNEL::CHANNEL_2N; ++channel) {
                     if (threadIdx.x == i)
-                        setChatterjeeSharedParameters(channel, za_evap.x, za_evap.y, mass_nuc, exc_energy);
+                        setSharedParameters(channel, za_evap.x, za_evap.y, mass_nuc, exc_energy);
                     __syncthreads();
-                    evaporation::integrateProbability();
+                    integrateProbability();
                 }
                 // select the channel
                 if (threadIdx.x == i) {
-                    flags = evaporation::selectChannel(flags);
+                    flags = selectChannel(flags);
                 }
                 __syncthreads();
                 /*
@@ -772,7 +772,7 @@ namespace deexcitation {
             // handle particle evaporation
             if (channel >= CHANNEL::CHANNEL_NEUTRON &&
                 channel < CHANNEL::CHANNEL_UNKNWON) {
-                evaporation::emitParticle(&rand_state[idx], channel);
+                emitParticle(&rand_state[idx], channel);
             }
             __syncthreads();
 
@@ -799,6 +799,274 @@ namespace deexcitation {
     }
 
 
+    namespace Kalbach {
+
+
+        __global__ void __kernel__deexcitationStep() {
+            int idx      = threadIdx.x + blockDim.x * blockIdx.x;
+            int lane_idx = threadIdx.x % CUDA_WARP_SIZE;
+
+            // pull particle data from buffer
+            buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].pullShared(blockDim.x);
+
+            // position & direction are not required here
+            // cache structure
+            // cache_univ[0:2] -> buffer idx, parent
+        
+            // cache_univ[INTEGRATE_SHARED_MEM_OFFSET                 :INTEGRATE_SHARED_MEM_OFFSET + 2 * blockDim.x] -> de-excitation emission probability (photon, fission)
+            // cache_univ[INTEGRATE_SHARED_MEM_OFFSET + 2 * blockDim.x:INTEGRATE_SHARED_MEM_OFFSET + 3 * blockDim.x] -> index of the selected channel
+            // cache_univ[INTEGRATE_SHARED_MEM_OFFSET + 3 * blockDim.x:INTEGRATE_SHARED_MEM_OFFSET + 4 * blockDim.x] -> maximum probability (for rejection unity)
+            
+            int* cache_univ_i = reinterpret_cast<int*>(mcutil::cache_univ);
+            int  targetp      = (cache_univ_i[0] + threadIdx.x) % cache_univ_i[1];
+
+            // data
+            float        exc_energy = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].e[targetp];
+
+            // extract ZA number
+            mcutil::UNION_FLAGS flags(buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].flags[targetp]);
+            uchar4 za_evap;
+            za_evap.x = (unsigned char)flags.deex.z;
+            za_evap.y = (unsigned char)flags.deex.a;
+            za_evap.z = 0;
+            za_evap.w = 0;
+
+            assert(flags.deex.a > 0);
+
+            // initialize flags
+            flags.base.fmask = 0u;
+
+            // check target is stable
+            if (za_evap.y <= 1)
+                flags.base.fmask |= FLAGS::FLAG_IS_STABLE;
+            if (exc_energy < MIN_EXC_ENERGY && long_lived_table.longLived(za_evap.x, za_evap.y))
+                flags.base.fmask |= FLAGS::FLAG_IS_STABLE;
+            __syncthreads();
+
+            // total probability
+            float prob;
+
+            // mass
+            float mass_nuc   = mass_table[za_evap.x].get(za_evap.y);
+
+            // photon branch probability
+            prob = photon::emissionProbability(za_evap.x, za_evap.y, mass_nuc, exc_energy, false);
+            mcutil::cache_univ[INTEGRATE_SHARED_MEM_OFFSET + threadIdx.x] = prob;
+            __syncthreads();
+
+            // fission branch probability
+            prob = 0.f;
+            if (DO_FISSION)
+                prob = fission::emissionProbability(za_evap.x, za_evap.y, exc_energy);
+            mcutil::cache_univ[INTEGRATE_SHARED_MEM_OFFSET + threadIdx.x + blockDim.x] = prob;
+            __syncthreads();
+
+            // shared memory
+            IntegrateSharedMem* smem = (IntegrateSharedMem*)mcutil::cache_univ;
+
+
+            // evaporation branch probability (blockwise working group)
+            for (int i = 0; i < blockDim.x; ++i) {
+                // initialize prob
+                if (threadIdx.x < CHANNEL::CHANNEL_2N) {
+                    smem->channel_prob[threadIdx.x] = threadIdx.x < CHANNEL::CHANNEL_NEUTRON
+                        ? mcutil::cache_univ[INTEGRATE_SHARED_MEM_OFFSET + i + blockDim.x * threadIdx.x]
+                        : 0.f;
+                    smem->channel_prob_max[threadIdx.x] = 0.f;
+                }
+                __syncthreads();
+                for (int channel = CHANNEL::CHANNEL_NEUTRON; channel < CHANNEL::CHANNEL_2N; ++channel) {
+                    if (threadIdx.x == i)
+                        setSharedParameters(channel, za_evap.x, za_evap.y, mass_nuc, exc_energy);
+                    __syncthreads();
+                    integrateProbability();
+                }
+                // select the channel
+                if (threadIdx.x == i) {
+                    flags = selectChannel(flags);
+                }
+                __syncthreads();
+            }
+
+            // get channel from the shared memory
+            int* cache_channel = reinterpret_cast<int*>(mcutil::cache_univ + INTEGRATE_SHARED_MEM_OFFSET + 2 * blockDim.x);
+
+            CHANNEL channel = (CHANNEL)cache_channel[threadIdx.x];
+
+            // exclude photon evaporation branch
+            int mask, size, offset;
+            mask = __ballot_sync(0xffffffff, channel == CHANNEL::CHANNEL_PHOTON);
+            size = __popc(mask);
+            if (size) {
+                // index
+                int target_from = (cache_univ_i[0] + threadIdx.x) % cache_univ_i[1];
+                if (!lane_idx)
+                    offset = buffer_catalog[mcutil::BUFFER_TYPE::PHOTON_EVAP].pushAtomicWarp(size);
+                offset = __shfl_sync(0xffffffff, offset, 0);
+                mask &= ~(0xffffffff << lane_idx);
+                mask = __popc(mask);
+                offset += mask;
+                offset %= buffer_catalog[mcutil::BUFFER_TYPE::PHOTON_EVAP].size;
+                if (channel == CHANNEL::CHANNEL_PHOTON) {
+                    flags.base.fmask |= FLAGS::FLAG_CHANNEL_PHOTON;
+
+                    // position
+                    buffer_catalog[mcutil::BUFFER_TYPE::PHOTON_EVAP].x[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].x[target_from];
+                    buffer_catalog[mcutil::BUFFER_TYPE::PHOTON_EVAP].y[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].y[target_from];
+                    buffer_catalog[mcutil::BUFFER_TYPE::PHOTON_EVAP].z[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].z[target_from];
+
+                    // weight
+                    buffer_catalog[mcutil::BUFFER_TYPE::PHOTON_EVAP].wee[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].wee[target_from];
+
+                    // flag
+                    buffer_catalog[mcutil::BUFFER_TYPE::PHOTON_EVAP].flags[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].flags[target_from];
+
+                    // momentum
+                    buffer_catalog[mcutil::BUFFER_TYPE::PHOTON_EVAP].u[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].u[target_from];
+                    buffer_catalog[mcutil::BUFFER_TYPE::PHOTON_EVAP].v[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].v[target_from];
+                    buffer_catalog[mcutil::BUFFER_TYPE::PHOTON_EVAP].w[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].w[target_from];
+
+                    // energy
+                    buffer_catalog[mcutil::BUFFER_TYPE::PHOTON_EVAP].e[offset] = exc_energy;
+
+                    if (BUFFER_HAS_HID) {
+                        buffer_catalog[mcutil::BUFFER_TYPE::PHOTON_EVAP].hid[offset]
+                            = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].hid[target_from];
+                    }
+                }
+            }
+            __syncthreads();
+
+            // exclude fission branch
+            mask = __ballot_sync(0xffffffff, channel == CHANNEL::CHANNEL_FISSION);
+            size = __popc(mask);
+            if (size) { // index
+                int target_from = (cache_univ_i[0] + threadIdx.x) % cache_univ_i[1];
+                if (!lane_idx)
+                    offset = buffer_catalog[mcutil::BUFFER_TYPE::COMP_FISSION].pushAtomicWarp(size);
+                offset = __shfl_sync(0xffffffff, offset, 0);
+                mask &= ~(0xffffffff << lane_idx);
+                mask = __popc(mask);
+                offset += mask;
+                offset %= buffer_catalog[mcutil::BUFFER_TYPE::COMP_FISSION].size;
+                if (channel == CHANNEL::CHANNEL_FISSION) {
+                    flags.base.fmask |= FLAGS::FLAG_CHANNEL_FISSION;
+
+                    // position
+                    buffer_catalog[mcutil::BUFFER_TYPE::COMP_FISSION].x[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].x[target_from];
+                    buffer_catalog[mcutil::BUFFER_TYPE::COMP_FISSION].y[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].y[target_from];
+                    buffer_catalog[mcutil::BUFFER_TYPE::COMP_FISSION].z[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].z[target_from];
+
+                    // weight
+                    buffer_catalog[mcutil::BUFFER_TYPE::COMP_FISSION].wee[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].wee[target_from];
+
+                    // flag
+                    buffer_catalog[mcutil::BUFFER_TYPE::COMP_FISSION].flags[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].flags[target_from];
+
+                    // momentum
+                    buffer_catalog[mcutil::BUFFER_TYPE::COMP_FISSION].u[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].u[target_from];
+                    buffer_catalog[mcutil::BUFFER_TYPE::COMP_FISSION].v[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].v[target_from];
+                    buffer_catalog[mcutil::BUFFER_TYPE::COMP_FISSION].w[offset]
+                        = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].w[target_from];
+
+                    // energy
+                    buffer_catalog[mcutil::BUFFER_TYPE::COMP_FISSION].e[offset] = exc_energy;
+
+                    if (BUFFER_HAS_HID) {
+                        buffer_catalog[mcutil::BUFFER_TYPE::COMP_FISSION].hid[offset]
+                            = buffer_catalog[mcutil::BUFFER_TYPE::DEEXCITATION].hid[target_from];
+                    }
+                }
+            }
+            __syncthreads();
+
+            // sample secondaries (before energy sampling)
+            // shared memory
+            // cache_univ[32                  :32 +      blockDim.x] -> ZA number of primary remnant & secondary particle
+            // cache_univ[32 + 1  * blockDim.x:32 +  2 * blockDim.x] -> mass of the parant nucleus, ground [MeV/c^2]
+            // cache_univ[32 + 2  * blockDim.x:32 +  3 * blockDim.x] -> mass of the primary remnant, ground [MeV/c^2]
+            // cache_univ[32 + 3  * blockDim.x:32 +  4 * blockDim.x] -> excitation energy of the parant nucleus [MeV]
+            // cache_univ[32 + 4  * blockDim.x:32 +  5 * blockDim.x] -> rejection unity
+            // cache_univ[32 + 5  * blockDim.x:32 +  6 * blockDim.x] -> coulomb barrier [MeV]
+            // cache_univ[32 + 6  * blockDim.x:32 +  7 * blockDim.x] -> Kalbach p
+            // cache_univ[32 + 7  * blockDim.x:32 +  8 * blockDim.x] -> Kalbach lambda
+            // cache_univ[32 + 8  * blockDim.x:32 +  9 * blockDim.x] -> Kalbach mu
+            // cache_univ[32 + 9  * blockDim.x:32 + 10 * blockDim.x] -> Kalbach nu
+            // cache_univ[32 + 10 * blockDim.x:32 + 11 * blockDim.x] -> Kalbach geom
+
+            // sample secondaries (after energy sampling)
+            // shared memory
+            // cache_univ[32                 :32 +     blockDim.x] -> ZA number of primary remnant & secondary particle
+            // cache_univ[32 + 1 * blockDim.x:32 + 2 * blockDim.x] -> primary remnant mass, ground [MeV]
+            // cache_univ[32 + 2 * blockDim.x:32 + 3 * blockDim.x] -> secondary remnant mass, ground [MeV]
+            // cache_univ[32 + 3 * blockDim.x:32 + 4 * blockDim.x] -> excitation energy of primary remnant
+            // cache_univ[32 + 4 * blockDim.x:32 + 5 * blockDim.x] -> excitation energy of seconary remnant (used in fission)
+            // cache_univ[32 + 5 * blockDim.x:32 + 6 * blockDim.x] -> CM momentum X
+            // cache_univ[32 + 6 * blockDim.x:32 + 7 * blockDim.x] -> CM momentum Y
+            // cache_univ[32 + 7 * blockDim.x:32 + 8 * blockDim.x] -> CM momentum Z
+
+            // initialize shared cache
+
+            uchar4* cache_zaev = reinterpret_cast<uchar4*>(mcutil::cache_univ + CUDA_WARP_SIZE);
+            cache_zaev[threadIdx.x] = za_evap;
+
+            float   max_prob = mcutil::cache_univ[INTEGRATE_SHARED_MEM_OFFSET + threadIdx.x + 3 * blockDim.x];
+            __syncthreads();
+
+            // channel shared -> energy shared
+
+            mcutil::cache_univ[CUDA_WARP_SIZE +     blockDim.x + threadIdx.x] = mass_nuc;
+            mcutil::cache_univ[CUDA_WARP_SIZE + 3 * blockDim.x + threadIdx.x] = exc_energy;
+            mcutil::cache_univ[CUDA_WARP_SIZE + 4 * blockDim.x + threadIdx.x] = max_prob * 1.05f;  // safety margin of rejection unity (1.05)
+
+            // initialize momentum vector (for stables)
+            mcutil::cache_univ[CUDA_WARP_SIZE + 5 * blockDim.x + threadIdx.x] = 0.f;
+            mcutil::cache_univ[CUDA_WARP_SIZE + 6 * blockDim.x + threadIdx.x] = 0.f;
+            mcutil::cache_univ[CUDA_WARP_SIZE + 7 * blockDim.x + threadIdx.x] = 0.f;
+
+            // handle particle evaporation
+            if (channel >= CHANNEL::CHANNEL_NEUTRON &&
+                channel < CHANNEL::CHANNEL_UNKNWON) {
+                emitParticle(&rand_state[idx], channel);
+            }
+            __syncthreads();
+
+            // handle unstable breakup (A < 30)
+            if (flags.base.fmask & FLAGS::FLAG_CHANNEL_UBREAKUP && !(flags.base.fmask & FLAGS::FLAG_IS_STABLE) && za_evap.y < MAX_A_BREAKUP) {
+                if (breakup::emitParticle(&rand_state[idx]))
+                    flags.base.fmask |= FLAGS::FLAG_CHANNEL_FOUND;
+            }
+            __syncthreads();
+
+            // Lorentz boost & write to buffer
+            float total_energy = mass_nuc + exc_energy;
+
+            boostAndWrite(mcutil::BUFFER_TYPE::DEEXCITATION, flags, total_energy, false);  // primary remnant
+            boostAndWrite(mcutil::BUFFER_TYPE::DEEXCITATION, flags, total_energy, true);   // secondary remnant
+        }
+
+
+        __host__ void deexcitationStep(int block, int thread) {
+            __kernel__deexcitationStep <<< block, thread, mcutil::SIZE_SHARED_MEMORY_GLOBAL >>> ();
+        }
+
+
+    }
 
 
 }

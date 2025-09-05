@@ -470,7 +470,12 @@ namespace RT2QMD {
             this->_initDumpSystem();
         }
 
+        // Hadrons
         CUDA_CHECK(RT2QMD::setMassTableHandle(Nucleus::MassTableHandler::getInstance().deviceptr()));
+        CUDA_CHECK(RT2QMD::setBarashenkovPtr(
+            Nucleus::HadronNuclearBarashenkovCorrection::getInstance().nCorrectionPtr(),
+            Nucleus::HadronNuclearBarashenkovCorrection::getInstance().pCorrectionPtr()
+        ));
 
         // initialize NN collision table
         bool use_incl_model = Host::Config::getInstance().usingINCLNNScattering();
@@ -595,7 +600,7 @@ namespace RT2QMD {
 #endif
             __host__propagate(this->_block, this->_thread);                    // do propagate
 
-            this->_pullEligibleFields(false);
+            // this->_pullEligibleFields(false);
 
             __host__finalize(this->_block, this->_thread, buffer_idx);         // finalize
 

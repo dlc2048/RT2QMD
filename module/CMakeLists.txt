@@ -47,6 +47,9 @@ add_module_cuda_library( physics   physics_target   ${physics_sources}   OPTIONS
 grab_sources( transport transport_sources )
 add_module_cuda_library( transport transport_target ${transport_sources} OPTIONS ${RT2QMD_SOURCE_OPTIONS} )
 
+grab_sources( material material_sources )
+add_module_cuda_library( material  material_target  ${material_sources}  OPTIONS ${RT2QMD_SOURCE_OPTIONS} )
+
 grab_sources( scoring scoring_sources )
 add_module_cuda_library( scoring   scoring_target   ${scoring_sources}   OPTIONS ${RT2QMD_SOURCE_OPTIONS} )
 
@@ -69,7 +72,8 @@ target_link_libraries( physics         singleton )
 target_link_libraries( particles       parser physics device )
 target_link_libraries( hadron          particles fortran device prompt )
 target_link_libraries( transport       device particles )
-target_link_libraries( scoring         fortran transport hadron )
+target_link_libraries( material        hadron parser physics prompt transport )
+target_link_libraries( scoring         fortran transport hadron material )
 target_link_libraries( qmd             fortran prompt device mclog transport hadron )
 target_link_libraries( deexcitation    fortran prompt device mclog transport hadron )
 target_link_libraries( nuc_secondary   particles fortran device prompt hadron )

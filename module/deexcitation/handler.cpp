@@ -122,7 +122,7 @@ namespace deexcitation {
         crho.push_back(0.0);
 
         for (double& cr : crho)
-            cr *= 0.6;
+            cr *= 0.5;
 
         // memory
         std::vector<float> crho_flaot = mcutil::cvtVectorDoubleToFloat(crho);

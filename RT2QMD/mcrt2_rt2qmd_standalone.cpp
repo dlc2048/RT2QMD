@@ -53,7 +53,8 @@
 #include "genericion/auxiliary.hpp"
 
 #include "auxiliary.hpp"
-#include "aux_score.hpp"
+
+#include "scoring/aux_score.hpp"
 
 
 int main(int argc, char* argv[]) {
@@ -379,6 +380,9 @@ int main(int argc, char* argv[]) {
 					else if (deexcitation::Host::Config::getInstance().crossSectionModel()
 						== deexcitation::XS_MODEL::XS_MODEL_CHATTERJEE)
 						deexcitation::Chatterjee::deexcitationStep(block, thread);
+					else if (deexcitation::Host::Config::getInstance().crossSectionModel()
+						== deexcitation::XS_MODEL::XS_MODEL_KALBACH)
+						deexcitation::Kalbach::deexcitationStep(block, thread);
 					else
 						assert(false);
 					break;
