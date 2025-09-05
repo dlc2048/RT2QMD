@@ -88,9 +88,16 @@ namespace tally {
         {DENSITY_TYPE::DENSITY_DOSE,       "MeV/g/hist"     },
         {DENSITY_TYPE::DENSITY_RBEDOSE,    "MeV/g/hist"     },
         {DENSITY_TYPE::DENSITY_LETD,       "MeV/cm/hist"    },
-        {DENSITY_TYPE::DENSITY_ACTIVATION, "#/cm3/hist"     },
-        {DENSITY_TYPE::DENSITY_SPALLATION, "#/cm3/hist"     },
-        
+        {DENSITY_TYPE::DENSITY_ACTIVATION, "#/cm3/hist"     }
+    };
+
+    /**
+    * @brief tally filter sync policy
+    */
+    enum class TALLY_FILTER_TYPE { 
+        FLUENCE     = 0,
+        ENERGY      = 1,
+        ACTIVATION  = 2,
     };
 
 
@@ -107,9 +114,13 @@ namespace tally {
     struct EquationElem {
         OPERATOR_TYPE type;
         int           pid;
+        int           za;
 
 
-        EquationElem(OPERATOR_TYPE op_type, const std::string& pid_literal);
+        EquationElem();
+
+
+        EquationElem(OPERATOR_TYPE op_type, const std::string& pname_literal);
 
 
         EquationElem(OPERATOR_TYPE op_type, int pid);
@@ -210,16 +221,23 @@ namespace tally {
 
 
     class FilterContext {
+    private:
+        static std::vector<int> _PROJECTILE_LIST;
     protected:
-        std::set<int>       _pid;   // target id lists (particle id)
-        std::set<uint32_t>  _bid;   // target id lists (implicit buffer id, not pid)
-        std::set<int>       _za;    // target genion ZA lists (empty -> all)
-        std::string         _part;  // part literal string
+        int           _pid;   // target id lists (particle id)
+        std::string   _part;  // part literal string
 
-        uint32_t _za_mask[Hadron::Projectile::ZA_SCORING_MASK_SIZE];  // ZA mask
+        uint32_t _za_mask[Hadron::Projectile::ZA_SCORING_MASK_SIZE];  // ZA mask, generic ion
+        int      _za_activation;  // ZA for activation (single)
 
 
         void _switchTargetPID(const EquationElem& part, bool state);
+
+
+        void _switchTargetZA(const EquationElem& part, bool state);
+
+
+        void _switchTargetZA(long long pos, int za, bool state);
 
 
         void _summaryFilterContext() const;
@@ -231,10 +249,18 @@ namespace tally {
         void _writeTallyFilter(std::ofstream& stream) const;
 
 
+        void _syncZAMaskAndActivationZA();
+
+
         FilterContext(mcutil::ArgInput& args);
 
 
     public:
+
+
+        static void setProjectileList(const std::vector<int>& proj_list) {
+            FilterContext::_PROJECTILE_LIST = proj_list;
+        }
 
 
         static void _initializeStaticArgs(mcutil::ArgumentCard& card);
@@ -243,11 +269,10 @@ namespace tally {
         void clearZAFilter();
 
 
-        bool switchTargetZA(int za, uint32_t pos);
+        void setZAFilterAll();
 
 
-        const std::set<int>& pid() const { return this->_pid; }
-        const std::set<uint32_t>& bid() const { return this->_bid; }
+        const int pid() const { return this->_pid; }
 
 
         bool isActivated(int pid) const;
@@ -256,10 +281,16 @@ namespace tally {
         bool ionAll() const;
 
 
+        bool ionNone() const;
+
+
         bool ionIsActivated(uint32_t ion_id) const;
 
 
         std::vector<int> ionFilterList() const;
+
+
+        void syncZAFilterAndParticleFilter(TALLY_FILTER_TYPE type);
 
 
     };

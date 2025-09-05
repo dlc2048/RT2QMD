@@ -38,12 +38,13 @@
 #ifndef RT2QMD_STANDALONE
 #include "mesh_track.hpp"
 #include "mesh_density.hpp"
+#include "mesh_activation.hpp"
 #include "cross.hpp"
 #include "track.hpp"
 #include "density.hpp"
+#include "activation.hpp"
 #include "phase_space.hpp"
 #include "detector.hpp"
-#include "activation.hpp"
 #include "letd.hpp"
 #include "mesh_letd.hpp"
 #endif
@@ -116,6 +117,14 @@ namespace tally {
 
     template <>
     void TallyHostDevicePair<MeshTrack, DeviceMeshTrack>::pullFromDevice(double total_weight);
+
+
+    template <>
+    void TallyHostDevicePair<MeshLETD, DeviceMeshLETD>::pullFromDevice(double total_weight);
+
+
+    template <>
+    void TallyHostDevicePair<MeshActivation, DeviceMeshActivation>::pullFromDevice(double total_weight);
 
 
 #endif

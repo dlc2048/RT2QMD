@@ -77,10 +77,6 @@ add_cuda_executable_program( RT2QMD target_name
   auxiliary.cpp
   auxiliary.cuh
   auxiliary.cu
-  aux_score.hpp
-  aux_score.cpp
-  aux_score.cuh
-  aux_score.cu
   OPTIONS ${RT2QMD_SOURCE_OPTIONS}
 )
 

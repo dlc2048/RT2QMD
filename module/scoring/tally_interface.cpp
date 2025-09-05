@@ -36,37 +36,42 @@
 #include "tally_interface.hpp"
 #include "tally_interface.cuh"
 
+#include "material/auxiliary.hpp"
+
 
 namespace tally {
 
 
-    EquationElem::EquationElem(OPERATOR_TYPE op_type, const std::string& pid_literal)
-        : type(op_type) {
-        int pid;
-        if (mcutil::isHasDigitHeader(pid_literal)) {  // part is numeric
-            std::stringstream num_converter(pid_literal);
-            num_converter >> pid;
-            if (num_converter.fail())
-                mclog::fatalTypeCasting("part", pid_literal);
+    EquationElem::EquationElem() :
+        type(OPERATOR_TYPE::NONE), pid(Define::PID::PID_UNKNOWN), za(-1) {}
+
+
+    EquationElem::EquationElem(OPERATOR_TYPE op_type, const std::string& pname_literal)
+        : type(op_type), pid(Define::PID::PID_UNKNOWN), za(-1) {
+        int pid, za;
+
+        // check part alias
+        pid = tallyPartAlias(pname_literal);
+        if (pid != Define::PID::PID_UNKNOWN) {
+            this->pid = pid;
+            return;
         }
-        else {  // part is literal
-            pid = tallyPartAlias(pid_literal);
-            if (pid == Define::PID::PID_UNKNOWN)
-                mclog::fatalTypeCasting("part", pid_literal);
+
+        // check ZA alias
+        za = mat::findIsotope(pname_literal);
+        if (za >= 0) {
+            this->za = za;
+            return;
         }
-        // check pid
-        if (op_type == OPERATOR_TYPE::OPERAND || pid == Define::PID::PID_ALL);
-        else if (mcutil::getPidHash().find(pid) == mcutil::getPidHash().end()) {
-            std::stringstream ss;
-            ss << "Encountered invalid particle id '" << pid << "'";
-            mclog::fatal(ss);
-        }
-        this->pid = pid;
+
+        std::stringstream ss;
+        ss << "Encountered invalid part '" << pname_literal << "'";
+        mclog::fatal(ss);
     }
 
 
     EquationElem::EquationElem(OPERATOR_TYPE op_type, int pid)
-        : type(op_type) {
+        : type(op_type), za(-1) {
         // check pid
         if (op_type == OPERATOR_TYPE::OPERAND && mcutil::getPidHash().find(pid) == mcutil::getPidHash().end()) {
             std::stringstream ss;
@@ -81,8 +86,8 @@ namespace tally {
         : EquationElem(op_type, Define::PID::PID_UNKNOWN) {}
 
 
-    EquationElem::EquationElem(const std::string& pid_literal) :
-        EquationElem(OPERATOR_TYPE::OPERAND, pid_literal) {}
+    EquationElem::EquationElem(const std::string& pname_literal) :
+        EquationElem(OPERATOR_TYPE::OPERAND, pname_literal) {}
 
 
     int tallyPartAlias(const std::string& part_literal) {
@@ -93,18 +98,21 @@ namespace tally {
 
         // basic particle alias
         static const std::map<std::string, int> PART_ALIAS_BASIC = {
-            { "all"       , Define::PID::PID_ALL      },  // all part
-            { "electron"  , Define::PID::PID_ELECTRON },
-            { "e"         , Define::PID::PID_ELECTRON },
-            { "photon"    , Define::PID::PID_PHOTON   },
-            { "gamma"     , Define::PID::PID_PHOTON   },
-            { "g"         , Define::PID::PID_PHOTON   },
-            { "positron"  , Define::PID::PID_POSITRON },
-            { "neutron"   , Define::PID::PID_NEUTRON  },
-            { "n"         , Define::PID::PID_NEUTRON  },
-            { "ion"       , Define::PID::PID_GENION   },
-            { "genion"    , Define::PID::PID_GENION   },
-            { "genericion", Define::PID::PID_GENION   },
+            { "all"            , Define::PID::PID_ALL      },  // all part
+            { "em"             , Define::PID::PID_EM       },  // electromagnetic
+            { "electromagnetic", Define::PID::PID_EM       },  // electromagnetic
+            { "hadron"         , Define::PID::PID_HADRON   },  // hadron
+            { "electron"       , Define::PID::PID_ELECTRON },
+            { "e"              , Define::PID::PID_ELECTRON },
+            { "photon"         , Define::PID::PID_PHOTON   },
+            { "gamma"          , Define::PID::PID_PHOTON   },
+            { "g"              , Define::PID::PID_PHOTON   },
+            { "positron"       , Define::PID::PID_POSITRON },
+            { "neutron"        , Define::PID::PID_NEUTRON  },
+            { "n"              , Define::PID::PID_NEUTRON  },
+            { "ion"            , Define::PID::PID_GENION   },
+            { "genion"         , Define::PID::PID_GENION   },
+            { "genericion"     , Define::PID::PID_GENION   },
         };
 
         // test basic alias
@@ -261,46 +269,125 @@ namespace tally {
     }
 
 
+    std::vector<int> FilterContext::_PROJECTILE_LIST;
+
+
     void FilterContext::_switchTargetPID(const EquationElem& part, bool state) {
-        auto iter = this->_pid.find(part.pid);
-        if (state) {
-            if (iter != this->_pid.end()) {
+        for (int pid = Define::PID::PID_ELECTRON; pid < Define::PID::PID_VACANCY; pid = pid << 1) {
+            if (part.pid & pid) {  // included
+                if (state) {  // turn on
+                    if (this->_pid & pid) {
+                        std::stringstream ss;
+                        ss << "Cannot include part '" << mcutil::getPidName().find(pid)->second << "'. It already exist";
+                        mclog::fatal(ss);
+                    }
+                    else
+                        this->_pid |= pid;
+                }
+                else {
+                    if (this->_pid & pid)
+                        this->_pid &= ~pid;
+                    else {
+                        std::stringstream ss;
+                        ss << "Cannot exclude part '" << mcutil::getPidName().find(pid)->second << "'. It is already excluded";
+                        mclog::fatal(ss);
+                    }
+                }
+            }
+        }
+    }
+
+
+    void FilterContext::_switchTargetZA(const EquationElem& part, bool state) {
+        int2 za_split = physics::splitZA(part.za);
+        if (za_split.y == 0) {  // ZZZ000
+            size_t counter = 0;
+            for (size_t i = 0; i < FilterContext::_PROJECTILE_LIST.size(); ++i) {
+                int2 za_p_split = physics::splitZA(FilterContext::_PROJECTILE_LIST[i]);
+                if (za_p_split.x == za_split.x) {
+                    this->_switchTargetZA(i, FilterContext::_PROJECTILE_LIST[i], state);
+                    counter += 1;
+                }
+            }
+            if (!counter) {
                 std::stringstream ss;
-                ss << "Cannot include part '" << mcutil::getPidName().find(part.pid)->second << "'. It already exist";
+                ss << "Undefined projectile '" << part.za << "'";
+                mclog::fatal(ss);
+            }
+        }
+        else {  // ZZZAAA
+            ptrdiff_t pos = std::distance(
+                FilterContext::_PROJECTILE_LIST.begin(),
+                std::find(
+                    FilterContext::_PROJECTILE_LIST.begin(),
+                    FilterContext::_PROJECTILE_LIST.end(),
+                    part.za
+                )
+            );
+            this->_switchTargetZA(pos, part.za, state);
+        }
+    }
+
+
+    void FilterContext::_switchTargetZA(long long pos, int za, bool state) {
+
+        if (pos == FilterContext::_PROJECTILE_LIST.size()) {  // turn activation
+            if (this->_za_activation) {
+                mclog::fatal("Attemting to set multiple ion filter for activation");
+            }
+            this->_za_activation = za;
+            return;
+        }
+
+        uint32_t index  = pos / Hadron::Projectile::ZA_SCORING_MASK_STRIDE;
+        uint32_t offset = pos % Hadron::Projectile::ZA_SCORING_MASK_STRIDE;
+
+        assert(pos < Hadron::Projectile::ZA_SCORING_MASK_DIM);
+
+        if (this->_za_mask[index] & (0x1u << offset)) {
+            if (state) {  // 
+                std::stringstream ss;
+                ss << "Ion filter for projectile '" << za << "' already exist";
                 mclog::fatal(ss);
             }
             else
-                this->_pid.insert(part.pid);
+                this->_za_mask[index] &= ~(0x1u << offset);
         }
         else {
-            if (iter == this->_pid.end()) {
+            if (state) {
+                this->_za_mask[index] |= 0x1u << offset;
+            }
+            else {
                 std::stringstream ss;
-                ss << "Cannot exclude part '" << mcutil::getPidName().find(part.pid)->second << "'. It is already excluded";
+                ss << "Ion filter for projectile '" << za << "' is already excluded";
                 mclog::fatal(ss);
             }
-            else
-                this->_pid.erase(part.pid);
         }
     }
 
 
     void FilterContext::_summaryFilterContext() const {
-        size_t i = 0;
-        for (auto pid : this->_pid) {
-            std::stringstream prefix;
-            prefix << "Part" << i;
-            mclog::printVar(prefix.str(), mcutil::getPidName().find(pid)->second);
-            i++;
-        }
-        if (this->_pid.find(Define::PID::PID_GENION) != this->_pid.end()) {  // GENION activated
-            std::string filter = this->ionAll() ? "Off" : "On";
-            mclog::printVar("Ion Filter", filter);
-            if (!this->ionAll()) {
+        mclog::printVar("Part", this->_part);
+        if (this->_pid & Define::PID::PID_HADRON) {  // HADRON activated
+            std::string filter;
+            if (this->_za_activation) {
+                filter = "On";
+                mclog::printVar("Ion Filter", filter);
                 std::stringstream ss;
                 ss << "    ";
-                for (auto za : this->ionFilterList())
-                    ss << "  " << za;
+                ss << this->_za_activation;
                 mclog::print(ss);
+            }
+            else {
+                filter = this->ionAll() ? "Off" : "On";
+                mclog::printVar("Ion Filter", filter);
+                if (!this->ionAll()) {
+                    std::stringstream ss;
+                    ss << "    ";
+                    for (auto za : this->ionFilterList())
+                        ss << "  " << za;
+                    mclog::print(ss);
+                }
             }
         }
     }
@@ -322,9 +409,35 @@ namespace tally {
     }
 
 
+    void FilterContext::_syncZAMaskAndActivationZA() {
+        size_t n_mask = 0u;
+        int    last_c = 0;
+        for (int i = 0; i < Hadron::Projectile::ZA_SCORING_MASK_SIZE; ++i) {
+            for (int j = 0; j < Hadron::Projectile::ZA_SCORING_MASK_STRIDE; ++j) {
+                if (this->_za_mask[i] & (0x1u << j)) {
+                    n_mask++;
+                    last_c = i * Hadron::Projectile::ZA_SCORING_MASK_STRIDE + j;
+                }
+            }
+        }
+        // case 1, n_mask == 0
+        if (n_mask == 0) {
+            if (this->_za_activation == 0)
+                mclog::fatal("Ion filter is not set for activation tally");
+        }
+        else if (n_mask == 1) {
+            if (this->_za_activation > 0)
+                mclog::fatal("Attemting to set multiple ion filter for activation tally");
+            this->_za_activation = FilterContext::_PROJECTILE_LIST[last_c];
+        }
+        else {
+            mclog::fatal("Attemting to set multiple ion filter for activation");
+        }
+    }
+
 
     FilterContext::FilterContext(mcutil::ArgInput& args) : 
-        _za_mask{ 0xffffffffu, 0xffffffffu, 0xffffffffu, 0xffffffffu } {
+        _pid(Define::PID::PID_UNKNOWN), _za_mask{ 0x00000000u, 0x00000000u, 0x00000000u, 0x00000000u }, _za_activation(0) {
         
         std::vector<std::string> equation_literal = args["part"].cast<std::string>();
         if (equation_literal.size() < 1)
@@ -364,39 +477,13 @@ namespace tally {
                 mode = false;
                 continue;
             }
-            if (seg.pid == Define::PID::PID_ALL) {
-                if (!mode)
-                    mclog::fatal("Not (-) operator cannot be applied to 'all' part");
-                else {
-                    this->_switchTargetPID(tally::EquationElem("photon"),   true);
-                    this->_switchTargetPID(tally::EquationElem("electron"), true);
-                    this->_switchTargetPID(tally::EquationElem("positron"), true);
-                    this->_switchTargetPID(tally::EquationElem("neutron"),  true);
-                    this->_switchTargetPID(tally::EquationElem("ion"),      true);
-                }
-            }
-            else
+            if (seg.pid != Define::PID::PID_UNKNOWN)
                 this->_switchTargetPID(seg, mode);
+            else
+                this->_switchTargetZA(seg, mode);
+
             mode = true;
         }
-
-        // set bid from pid
-        for (auto pid : this->_pid)
-            this->_bid.insert(mcutil::getPidHash().find(pid)->second);
-
-        // set part literal name
-        if (this->_pid.size() == 1) {
-            for (const auto& pid_pair : mcutil::getPidName()) {
-                if (this->_pid.find(pid_pair.first) != this->_pid.end()) {
-                    this->_part = pid_pair.second;
-                    break;
-                }
-            }
-        }
-        else if (this->_pid.size() == 5)
-            this->_part = "all";
-        else
-            this->_part = "mixed";
     }
 
 
@@ -406,35 +493,34 @@ namespace tally {
 
 
     void FilterContext::clearZAFilter() {
-        this->_za.clear();
         for (int i = 0; i < Hadron::Projectile::ZA_SCORING_MASK_SIZE; ++i)
-            this->_za_mask[i] = 0x0u;
+            this->_za_mask[i] = 0x00000000u;
     }
 
 
-    bool FilterContext::switchTargetZA(int za, uint32_t pos) {
-        uint32_t index  = pos / Hadron::Projectile::ZA_SCORING_MASK_STRIDE;
-        uint32_t offset = pos % Hadron::Projectile::ZA_SCORING_MASK_STRIDE;
-
-        assert(pos < Hadron::Projectile::ZA_SCORING_MASK_DIM);
-
-        if (this->_za_mask[index] & (0x1u << offset))
-            return false;
-
-        this->_za_mask[index] |= 0x1u << offset;
-        this->_za.insert(za);
-        return true;
+    void FilterContext::setZAFilterAll() {
+        for (int i = 0; i < Hadron::Projectile::ZA_SCORING_MASK_SIZE; ++i)
+            this->_za_mask[i] = 0xffffffffu;
     }
 
-
+    
     bool FilterContext::isActivated(int pid) const {
-        return this->_pid.find(pid) != this->_pid.end();
+        return this->_pid & pid;
     }
 
 
     bool FilterContext::ionAll() const {
         for (auto mask : this->_za_mask) {
             if (mask != 0xffffffffu)
+                return false;
+        }
+        return true;
+    }
+
+
+    bool FilterContext::ionNone() const {
+        for (auto mask : this->_za_mask) {
+            if (mask != 0x00000000u)
                 return false;
         }
         return true;
@@ -449,7 +535,68 @@ namespace tally {
 
 
     std::vector<int> FilterContext::ionFilterList() const {
-        return std::vector<int>(this->_za.begin(), this->_za.end());
+        std::vector<int> flist;
+        for (uint32_t i = 0; i < FilterContext::_PROJECTILE_LIST.size(); ++i) {
+            if (this->ionIsActivated(i))
+                flist.push_back(FilterContext::_PROJECTILE_LIST[i]);
+        }
+        return flist;
+    }
+
+
+    void FilterContext::syncZAFilterAndParticleFilter(TALLY_FILTER_TYPE type) {
+
+        if (type == TALLY_FILTER_TYPE::ACTIVATION) {
+            this->_syncZAMaskAndActivationZA();
+            this->_pid |= Define::PID::PID_HADRON;
+        }
+        else if (type == TALLY_FILTER_TYPE::FLUENCE) {  // fluence
+            if (this->isActivated(Define::PID::PID_GENION) && this->ionNone())
+                this->setZAFilterAll();
+            else if (!this->ionNone()) {
+                this->_pid |= Define::PID::PID_GENION;
+            }
+            this->_za_activation = 0;
+        }
+        else if (type == TALLY_FILTER_TYPE::ENERGY) {  // energy
+
+            // ion
+            if ((this->isActivated(Define::PID::PID_GENION) || this->isActivated(Define::PID::PID_NEUTRON)) && this->ionNone()) {
+                this->setZAFilterAll();
+                this->_pid |= Define::PID::PID_HADRON;
+            }
+            else if (!this->ionNone())
+                this->_pid |= Define::PID::PID_HADRON;
+
+            // EM
+            if (this->isActivated(Define::PID::PID_PHOTON)   ||
+                this->isActivated(Define::PID::PID_ELECTRON) ||
+                this->isActivated(Define::PID::PID_POSITRON))
+                this->_pid |= Define::PID::PID_EM;
+
+            this->_za_activation = 0;
+        }
+
+        // set the literal name
+        switch (this->_pid) {
+        case Define::PID::PID_EM:
+            this->_part = "EM";
+            break;
+        case Define::PID::PID_NEUTRON:
+            this->_part = "neutron";
+            break;
+        case Define::PID::PID_GENION:
+            this->_part = "genericion";
+            break;
+        case Define::PID::PID_HADRON:
+            this->_part = "hadron";
+            break;
+        case Define::PID::PID_ALL:
+            this->_part = "all";
+            break;
+        default:
+            this->_part = "mixed";
+        }
     }
 
 

@@ -37,8 +37,7 @@ namespace tally {
         DENSITY_DOSE       = 1,   // Physical dose [MeV/g]
         DENSITY_RBEDOSE    = 2,   // RBE weighted dose [MeV/g]
         DENSITY_LETD       = 3,   // Dose-averaged LET [MeV/cm]
-        DENSITY_ACTIVATION = 4,   // Low neutron activation [#/cm3]
-        DENSITY_SPALLATION = 5,   // Fast neutron & generic ion spallation [#/cm3]
+        DENSITY_ACTIVATION = 4,   // Radioisotope activation [#/cm3]
     } DENSITY_TYPE;
 
 

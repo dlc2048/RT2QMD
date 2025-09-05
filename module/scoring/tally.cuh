@@ -38,6 +38,7 @@
 #ifndef RT2QMD_STANDALONE
 #include "mesh_track.cuh"
 #include "mesh_density.cuh"
+#include "mesh_activation.cuh"
 #include "cross.cuh"
 #include "track.cuh"
 #include "density.cuh"
@@ -54,55 +55,61 @@ namespace tally {
 
 #ifdef RT2QMD_STANDALONE
     // dummy struct
-    typedef struct DeviceMeshTrack   {};
-    typedef struct DeviceMeshDensity {
+    typedef struct DeviceMeshTrack      {} DeviceMeshTrack;
+    typedef struct DeviceMeshDensity    {
         __inline__ __device__ bool isIonTarget() { return false; }
         __inline__ __device__ void append(float3 pos, float energy, float rbe, float weight, float density) {}
-    };
-    typedef struct DeviceCross       {};
-    typedef struct DeviceTrack       {};
-    typedef struct DeviceDensity     {
+    } DeviceMeshDensity;
+    typedef struct DeviceCross          {} DeviceCross;
+    typedef struct DeviceTrack          {} DeviceTrack;
+    typedef struct DeviceDensity        {
         __inline__ __device__ bool isIonTarget() { return false; }
         __inline__ __device__ void append(int rold, float energy, float rbe, float weight, float density) {}
-    };
-    typedef struct DeviceDetector    {
+    } DeviceDensity;
+    typedef struct DeviceDetector       {
         __inline__ __device__ bool isIonTarget() { return false; }
         __inline__ __device__ void append(int rold, float weight, float depo, int hid) {}
-    };
-    typedef struct DevicePhaseSpace  {};
-    typedef struct DeviceActivation  {};
-    typedef struct DeviceDensityLETD {
+    } DeviceDetector;
+    typedef struct DevicePhaseSpace     {} DevicePhaseSpace;
+    typedef struct DeviceActivation     {} DeviceActivation;
+    typedef struct DeviceDensityLETD    {
         __inline__ __device__ bool isIonTarget() { return false; }
         __inline__ __device__ void append(int rold, float energy, float let, float weight) {}
     };
-    typedef struct DeviceMeshLETD    {
+    typedef struct DeviceMeshLETD       {
         __inline__ __device__ bool isIonTarget() { return false; }
         __inline__ __device__ void append(float3 pos, float energy, float let, float weight) {}
-    };
+    } DeviceMeshLETD;
+    typedef struct DeviceMeshActivation {
+        __inline__ __device__ bool isIonTarget() { return false; }
+        __inline__ __device__ void append(float3 pos, float energy, float let, float weight) {}
+    } DeviceMeshActivation;
 #endif
 
 
     typedef struct DeviceHandle {
-        DeviceMeshTrack**   mesh_track;
-        DeviceMeshDensity** mesh_density;
-        DeviceCross**       cross;
-        DeviceTrack**       track;
-        DeviceDensity**     density;
-        DeviceDetector**    detector;
-        DevicePhaseSpace**  phase_space;
-        DeviceActivation**  activation;
-        DeviceDensityLETD** letd;
-        DeviceMeshLETD**    mesh_letd;
-        int                 n_mesh_track;
-        int                 n_mesh_density;
-        int                 n_cross;
-        int                 n_track;
-        int                 n_density;
-        int                 n_detector;
-        int                 n_phase_space;
-        int                 n_activation;
-        int                 n_letd;
-        int                 n_mesh_letd;
+        DeviceMeshTrack**      mesh_track;
+        DeviceMeshDensity**    mesh_density;
+        DeviceMeshActivation** mesh_activation;
+        DeviceCross**          cross;
+        DeviceTrack**          track;
+        DeviceDensity**        density;
+        DeviceDetector**       detector;
+        DevicePhaseSpace**     phase_space;
+        DeviceActivation**     activation;
+        DeviceDensityLETD**    letd;
+        DeviceMeshLETD**       mesh_letd;
+        int                    n_mesh_track;
+        int                    n_mesh_density;
+        int                    n_mesh_activation;
+        int                    n_cross;
+        int                    n_track;
+        int                    n_density;
+        int                    n_detector;
+        int                    n_phase_space;
+        int                    n_activation;
+        int                    n_letd;
+        int                    n_mesh_letd;
 
 
         __host__ static void Deleter(DeviceHandle* ptr);
