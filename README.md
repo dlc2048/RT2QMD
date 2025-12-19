@@ -105,7 +105,7 @@ Author: Chang-Min Lee
 
 Email: dlc2048@snu.ac.kr
 
-### Corresponding author
+### Principal Investigator
 
 Author: Sung-Joon Ye
 
