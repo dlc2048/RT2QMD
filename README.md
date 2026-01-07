@@ -97,6 +97,11 @@ See [input_syntax.pdf] for more detail
 
 Apache-2.0 License. See **LICENSE** for details
 
+## Citing RT2QMD
+
+Lee, C. M., & Ye, S. J. (2025). RT2QMD: GPU-Accelerated Nucleus-Nucleus Fragmentation Event Generator. Computer Physics Communications, 110000.
+https://doi.org/10.1016/j.cpc.2025.110000
+
 ## Contact
 
 ### Technical or bug issues
